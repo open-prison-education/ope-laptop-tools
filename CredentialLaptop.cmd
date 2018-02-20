@@ -16,7 +16,7 @@ if '%errorlevel%' NEQ '0' (
     goto switchToUAC
 ) else ( goto isAlreadyUAC )
 
-echo Why are you here
+echo Why are you here - this is a bug - please report it
 pause
 
 :switchToUAC
