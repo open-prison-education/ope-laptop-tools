@@ -53,6 +53,9 @@ rem run update from Git server
 echo -- Getting latest updates from local git server...
 call %~dp0\bin\OfflineUpdate.cmd auto
 
+rem Make sure vstudio redists are installed
+call %~dp0\bin\vcredist_x86.exe /install /quiet
+
 echo -- Applying windows group policy...
 call %~dp0\bin\restore_pre_gpo.cmd
 
