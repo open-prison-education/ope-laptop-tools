@@ -63,7 +63,8 @@ echo -- Running Credential App to setup student account and link with Canvas...
 set credential_app="%~dp0\laptop_credential\credential.exe"
 REM set credential_app="python %~dp0\laptop_credential\app.py"
 echo %credential_app%
-%credential_app%
+REM || exit makes the script stop if the credential fails
+%credential_app% || exit /b 1
 
 echo -- Installing latest OPEService...
 REM TODO
