@@ -79,6 +79,10 @@ call %~dp0\bin\install_service.cmd 2>NUL 1<NUL
 echo -- Applying windows group policy...
 call %~dp0\bin\restore_post_gpo.cmd
 
+echo -- Applying firewall rules...
+call %~dp0\bin\import_firewall_rules.cmd
+
+
 echo(
 echo(
 echo -- Set an Admin password for this laptop!!!!
