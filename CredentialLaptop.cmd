@@ -51,7 +51,7 @@ REM timeout /t 10 /nobreak
 
 rem run update from Git server
 echo -- Getting latest updates from local git server...
-rem call %~dp0bin\OfflineUpdate.cmd auto
+call %~dp0bin\OfflineUpdate.cmd auto
 
 rem call the main credential script
 echo -- Starting credential process...
