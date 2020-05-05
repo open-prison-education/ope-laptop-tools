@@ -1,4 +1,23 @@
 @echo off
+SETLOCAL ENABLEEXTENSIONS
+SETLOCAL ENABLEDELAYEDEXPANSION
+
+SET ESC=[
+SET ESC_CLEAR=%ESC%2j
+SET ESC_RESET=%ESC%0m
+SET ESC_GREEN=%ESC%32m
+SET ESC_RED=%ESC%31m
+SET ESC_YELLOW=%ESC%33m
+
+if [%1] EQU [] (
+    rem No param, use master branch
+    SET GIT_BRANCH=master
+
+) else (
+    rem Param provided, use it as the current branch
+    SET GIT_BRANCH=%1    
+    echo using git branch %GIT_BRANCH%
+)
 
 rem echo Starting Credential Process...
 rem pause
@@ -9,26 +28,27 @@ rem >nul 2>&1 "%SYSTEMROOT%\system32\icacls.exe" "%SYSTEMROOT%\system32\config\s
 NET FILE 1>NUL 2>NUL
 
 rem error flag set = no admin priv
-rem if '%errorlevel%' NEQ '0' (
 if '%errorlevel%' NEQ '0' (
     rem echo Not admin...
     rem pause
     goto switchToUAC
 ) else ( goto isAlreadyUAC )
 
-echo Why are you here
+echo %ESC_RED%Why are you here - this is a bug - please report it%ESC_RESET%
 pause
 
 :switchToUAC
     echo Not UAC - Switching to UAC...
     echo Set UAC = CreateObject^("Shell.Application"^) > "%tfile%"
-    echo args = "/C %~s0" >> "%tfile%"
+    echo args = "/C %~s0 %*" >> "%tfile%"
     echo For Each strArg in WScript.Arguments >> "%tfile%"
     echo   args = args ^& strArg ^& " " >> "%tfile%"
     echo Next >> "%tfile%"
     echo UAC.ShellExecute "cmd", args, "", "runas", 1 >> "%tfile%"
     
-    wscript "%tfile%" %*
+    rem wscript "%tfile%" %*
+    wscript "%tfile%"
+    rem echo Params  %*
     rem pause
     exit /B
     
@@ -40,53 +60,37 @@ pause
     cd /D "%~dp0"
     rem pause
 
-echo ---- Configuring Laptop for Inmate Use ----
-echo(
 
-echo -- Disabling OPEService...
+echo %ESC_GREEN%[ ---- Configuring Laptop for Inmate Use ---- ]%ESC_RESET%
+echo.
+
+rem - Remove at some point - service is stopped/restarted in install_service now
+rem echo %ESC_YELLOW%-- Turning off OPEService...%ESC_RESET%
 net stop OPEService 2>NUL 1>NUL
+
 REM IF YOUR NETWORK DEVICE IS DISABLED - YOU WILL NEED TO TURN IN BACK ON!!!
 REM echo waiting for service to stop...
 REM timeout /t 10 /nobreak
 
 rem run update from Git server
-echo -- Getting latest updates from local git server...
-call %~dp0\bin\OfflineUpdate.cmd auto
+echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
+rem call %~dp0bin\OfflineUpdate.cmd auto
+call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
+    echo.
+    pause
+    exit /b 2
+)
 
-echo -- Applying windows group policy...
-call %~dp0\bin\restore_pre_gpo.cmd
-
-echo -- Running Credential App to setup student account and link with Canvas...
-set credential_app="%~dp0\laptop_credential\credential.exe"
-REM set credential_app="python %~dp0\laptop_credential\app.py"
-echo %credential_app%
-%credential_app%
-
-echo -- Installing latest OPEService...
-REM TODO
-call %~dp0\bin\install_service.cmd 2>NUL 1<NUL
-
-echo -- Applying windows group policy...
-call %~dp0\bin\restore_post_gpo.cmd
-
-echo(
-echo(
-echo -- Set an Admin password for this laptop!!!!
-echo(
-echo Hit CTRL + ALT + Delete and choose "Change Password"
-echo - This will let you set an admin password for this laptop
-echo - DO NOT USE YOUR NORMAL ADMIN PASSWORD FOR YOUR NETWORK!!
-pause
-echo(
-echo(
-echo -- Are you sure you set the admin password?
-pause
-
-
-echo Done. 
-echo(
-echo Make sure to set a unique admin password in the BIOS and disable alternative boot devices.
-echo Student will need to plug in to the secure docking station, login and run the LMS app to download Canvas files.
-pause
-echo -- WARNING - Don't forget to set an admin BIOS password!!!
-pause
+rem call the main credential script
+echo %ESC_GREEN%-- Starting credential process...%ESC_RESET%
+call %~dp0bin\run_credential_process.cmd
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
+    echo.
+    pause
+    exit /b 2
+)
