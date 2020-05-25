@@ -1,4 +1,12 @@
+@echo off
 
-net stop OPEService
+net stop OPEService >> nul 2>&1
 
-dist\OPEService.exe -remove
+rem Service should always be in the programdata\ope\OPEService folder
+%programdata%\ope\Services\OPEService\OPEService.exe remove
+
+
+goto endofscript
+
+
+:endofscript
