@@ -78,12 +78,16 @@ rem call %~dp0bin\OfflineUpdate.cmd auto
 call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
+    echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
     echo.
-    pause
+    echo.
+    rem /T 3
+    choice /C yn /M "Do you want to continue anyway? (y/n) "
+    if [%errorlevel%] EQU [1] goto startcredential
     exit /b 2
 )
 
+:startcredential
 rem call the main credential script
 echo %ESC_GREEN%-- Starting credential process...%ESC_RESET%
 call %~dp0bin\run_credential_process.cmd
