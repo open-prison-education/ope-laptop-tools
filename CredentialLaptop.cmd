@@ -78,7 +78,8 @@ if %ERRORLEVEL% NEQ 0 (
     echo %ESC_RED%*** ERROR - Failed to unlock machine - Quitting. ***%ESC_RESET%
     echo.
     echo.
-    
+    pause
+    pause
     exit /b 2
 )
 
@@ -108,6 +109,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo %ESC_RED%****** ERROR - Failed to install OPE services. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
     echo.
     pause
+    pause
     exit /b 2
 )
 
@@ -119,6 +121,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
     echo.
+    pause
     pause
     exit /b 2
 )
@@ -132,9 +135,12 @@ if %ERRORLEVEL% NEQ 0 (
     echo %ESC_RED%****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
     echo.
     pause
+    pause
     exit /b 2
 )
 
 rem good run - return 0
 echo %ESC_GREEN% *** Credential Done *** %ESC_RESET%
+
+pause
 exit /b 0
