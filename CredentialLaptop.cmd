@@ -114,7 +114,7 @@ if %ERRORLEVEL% NEQ 0 (
 :startcredential
 rem call the main credential script
 echo %ESC_GREEN%-- Starting credential process...%ESC_RESET%
-call %~dp0Services\mgmt\mgmt.exe credential
+call %~dp0Services\mgmt\mgmt.exe credential_laptop
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
