@@ -84,21 +84,22 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 
+rem Don't need this - auto update will get it?
 rem run update from Git server
-echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
+rem echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
 rem call %~dp0bin\OfflineUpdate.cmd auto
 rem call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
-call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH%
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
-    echo.
-    echo.
-    rem /T 3
-    choice /C yn /M "Do you want to continue anyway? (y/n) "
-    if [!errorlevel!] EQU [1] goto runinstall
-    exit /b 2
-)
+rem call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH%
+rem if %ERRORLEVEL% NEQ 0 (
+rem     echo.
+rem     echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
+rem     echo.
+rem     echo.
+rem     rem /T 3
+rem     choice /C yn /M "Do you want to continue anyway? (y/n) "
+rem     if [!errorlevel!] EQU [1] goto runinstall
+rem     exit /b 2
+rem )
 
 :runinstall
 rem install services
@@ -116,7 +117,8 @@ if %ERRORLEVEL% NEQ 0 (
 :startcredential
 rem call the main credential script
 echo %ESC_GREEN%-- Starting credential process...%ESC_RESET%
-call %~dp0Services\mgmt\mgmt.exe credential_laptop
+rem call %~dp0Services\mgmt\mgmt.exe credential_laptop
+call %programdata%\ope\Services\mgmt\mgmt.exe credential_laptop
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
@@ -129,7 +131,8 @@ if %ERRORLEVEL% NEQ 0 (
 :lock_machine
 rem Lock machine down which will enable user account
 echo %ESC_GREEN%-- Locking Machine...%ESC_RESET%
-call %~dp0Services\mgmt\mgmt.exe lock_machine
+rem call %~dp0Services\mgmt\mgmt.exe lock_machine
+call %programdata%\ope\Services\mgmt\mgmt.exe lock_machine
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
