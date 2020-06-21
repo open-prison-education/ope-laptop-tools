@@ -143,7 +143,11 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 rem good run - return 0
+echo.
+echo.
 echo %ESC_GREEN% *** Credential Done *** %ESC_RESET%
+echo.
+echo.
 
 pause
 exit /b 0
