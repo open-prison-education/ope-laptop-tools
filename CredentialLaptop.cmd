@@ -143,11 +143,13 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 rem good run - return 0
+
 echo.
-echo.
-echo %ESC_GREEN% *** Credential Done *** %ESC_RESET%
-echo.
+rem echo %ESC_GREEN% *** Credential Done *** %ESC_RESET%
 echo.
 
-pause
+rem pause
+rem use ping for slight pause
+set seconds=10
+PING -n !seconds! 127.0.0.1 >NUL 2>&1 || PING -n !seconds! ::1 >NUL 2>&1
 exit /b 0
