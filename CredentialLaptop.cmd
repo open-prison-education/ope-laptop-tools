@@ -152,4 +152,5 @@ rem pause
 rem use ping for slight pause
 set seconds=10
 PING -n !seconds! 127.0.0.1 >NUL 2>&1 || PING -n !seconds! ::1 >NUL 2>&1
+pause
 exit /b 0
