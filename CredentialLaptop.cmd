@@ -135,7 +135,7 @@ rem call %~dp0Services\mgmt\mgmt.exe lock_machine
 call %programdata%\ope\Services\mgmt\mgmt.exe lock_machine
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo %ESC_RED%****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
+    echo %ESC_RED%****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. Try mgmt lock_machine again to see if you can lock it manually. *******%ESC_RESET%
     echo.
     pause
     pause
