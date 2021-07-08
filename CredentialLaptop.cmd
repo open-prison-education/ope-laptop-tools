@@ -84,22 +84,21 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 
-rem Don't need this - auto update will get it?
 rem run update from Git server
-rem echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
+echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
 rem call %~dp0bin\OfflineUpdate.cmd auto
 rem call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
-rem call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH%
-rem if %ERRORLEVEL% NEQ 0 (
-rem     echo.
-rem     echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
-rem     echo.
-rem     echo.
-rem     rem /T 3
-rem     choice /C yn /M "Do you want to continue anyway? (y/n) "
-rem     if [!errorlevel!] EQU [1] goto runinstall
-rem     exit /b 2
-rem )
+call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH% "%dp0"
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
+    echo.
+    echo.
+    rem /T 3
+    choice /C yn /T 15 /D y /M "Do you want to continue anyway? (y/n - default y in 15 seconds): "
+    if [!errorlevel!] EQU [1] goto runinstall
+    exit /b 2
+)
 
 :runinstall
 rem install services
