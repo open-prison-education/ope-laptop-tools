@@ -88,6 +88,7 @@ rem run update from Git server
 echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
 rem call %~dp0bin\OfflineUpdate.cmd auto
 rem call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
+rem
 SET CURR_FOLDER=%~dp0
 call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH% "%CURR_FOLDER%"
 if %ERRORLEVEL% NEQ 0 (
