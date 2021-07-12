@@ -70,6 +70,7 @@ call %~dp0Services\mgmt\rc\install_vc_runtimes.cmd
 echo.
 
 
+
 echo -- %ESC_GREEN%Unlocking Machine - please wait... %ESC_RESET% --
 echo.
 call %~dp0Services\mgmt\mgmt.exe unlock_machine
@@ -84,12 +85,9 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 
+
 rem run update from Git server
 echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
-rem call %~dp0bin\OfflineUpdate.cmd auto
-rem
-rem SET CURR_FOLDER=%~dp0
-rem call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH% "%CURR_FOLDER%"
 rem NOTE - Need to git_pull outside of mgmt.exe so we can update those files
 call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
 if %ERRORLEVEL% NEQ 0 (
@@ -115,6 +113,52 @@ if %ERRORLEVEL% NEQ 0 (
     pause
     exit /b 2
 )
+
+
+rem Contributions from Mike Huse - https://github.com/operepo/ope/issues/86
+:dtime_start
+echo %ESC_GREEN%[ ---- Updating System Time ---- ]%ESC_RESET%
+echo Current: %windir%\system32\date /T  %windir%\system32\time /T
+echo Is the system date/time correct?
+choice /C yn /T 6 /D y /M "Press N to set date/time [y/n]"
+if errorlevel 1 goto skipsetdatetime
+%windir%\system32\time
+%windir%\system32\date
+
+:skipsetdatetime
+
+rem Add code to update KMS and run licensing
+:set_kms_start
+echo %ESC_GREEN%[ ---- Configuring Laptop to get its Windows licensing ---- ]%ESC_RESET%
+
+rem  ***** Change IP Address and KMS name for your server below. You can also replace the IP address with the KMS name as well ******
+echo Do you want to set KMS and Office activation servers?
+choice /C yn /M "Press Y to set activation servers [y/n]"
+if errorlevel 2 goto skipsetkmsserver
+set KMS_URL=
+set DEFAULT_KMS_URL=172.29.20.115
+set OFFICE_URL=
+set DEFAULT_OFFICE_URL=wwcc-kms.wwcc-wsp.edu
+SET OFFICE_PATH=c:\program files (x86)\microsoft office\office16\
+
+SET /p KMS_URL=Enter KMS Server URL/IP [default %DEFAULT_KMS_URL%]:
+if "%KMS_URL%"==""
+    SET KMS_URL=%DEFAULT_KMS_URL%
+    
+echo Setting KMS URL: %KMS_URL%
+%windir%\system32\cscript slmgr.vbs /skms %KMS_URL%
+%windir%\system32\cscript slmgr.vbs /ato
+
+
+
+SET /p OFFICE_URL=Enter Office Server URL/IP [default %DEFAULT_OFFICE_URL%]:
+if "%OFFICE_URL%"==""
+    SET KMS_URL=%DEFAULT_OFFICE_URL%
+
+%windir%\system32\cscript %OFFICE_PATH%ospp.vbs /sethst:%OFFICE_URL%
+%windir%\system32\cscript %OFFICE_PATH%cscript ospp.vbs /act
+
+:skipsetkmsserver
 
 :startcredential
 rem call the main credential script
