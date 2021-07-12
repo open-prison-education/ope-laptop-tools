@@ -87,10 +87,11 @@ if %ERRORLEVEL% NEQ 0 (
 rem run update from Git server
 echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
 rem call %~dp0bin\OfflineUpdate.cmd auto
-rem call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
 rem
-SET CURR_FOLDER=%~dp0
-call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH% "%CURR_FOLDER%"
+rem SET CURR_FOLDER=%~dp0
+rem call %~dp0Services\mgmt\mgmt.exe git_pull %GIT_BRANCH% "%CURR_FOLDER%"
+rem NOTE - Need to git_pull outside of mgmt.exe so we can update those files
+call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
