@@ -118,9 +118,10 @@ if %ERRORLEVEL% NEQ 0 (
 rem Contributions from Mike Huse - https://github.com/operepo/ope/issues/86
 :dtime_start
 echo %ESC_GREEN%[ ---- Updating System Time ---- ]%ESC_RESET%
-echo Current: %windir%\system32\date /T  %windir%\system32\time /T
+%windir%\system32\date /T
+%windir%\system32\time /T
 echo Is the system date/time correct?
-choice /C yn /T 6 /D y /M "Press N to set date/time [y/n]"
+choice /C yn /T 15 /D y /M "Press N to set date/time [y/n]"
 if errorlevel 1 goto skipsetdatetime
 %windir%\system32\time
 %windir%\system32\date
@@ -136,6 +137,7 @@ echo Do you want to set KMS and Office activation servers?
 choice /C yn /M "Press Y to set activation servers [y/n]"
 if errorlevel 2 goto skipsetkmsserver
 set KMS_URL=
+rem TODO - Pull this from the registry?
 set DEFAULT_KMS_URL=172.29.20.115
 set OFFICE_URL=
 set DEFAULT_OFFICE_URL=wwcc-kms.wwcc-wsp.edu
