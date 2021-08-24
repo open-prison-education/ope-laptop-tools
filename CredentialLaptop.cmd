@@ -64,6 +64,56 @@ pause
 echo %ESC_GREEN%[ ---- Configuring Laptop for Student Use ---- ]%ESC_RESET%
 echo.
 
+
+rem Contributions from Mike Huse - https://github.com/operepo/ope/issues/86
+:dtime_start
+echo %ESC_GREEN%[ ---- Updating System Time ---- ]%ESC_RESET%
+%windir%\system32\date /T
+%windir%\system32\time /T
+echo Is the system date/time correct?
+choice /C yn /T 15 /D y /M "Press N to set date/time [y/n]"
+if errorlevel 1 goto skipsetdatetime
+%windir%\system32\time
+%windir%\system32\date
+
+:skipsetdatetime
+
+rem Add code to update KMS and run licensing
+:set_kms_start
+echo %ESC_GREEN%[ ---- Configuring Laptop to get its Windows licensing ---- ]%ESC_RESET%
+
+rem  ***** Change IP Address and KMS name for your server below. You can also replace the IP address with the KMS name as well ******
+echo Do you want to set KMS and Office activation servers?
+choice /C yn /D n /T 10 /M "Press Y to set activation servers [y/n]"
+if errorlevel 2 goto skipsetkmsserver
+set KMS_URL=
+rem TODO - Pull this from the registry?
+set DEFAULT_KMS_URL=172.29.20.115
+set OFFICE_URL=
+set DEFAULT_OFFICE_URL=wwcc-kms.wwcc-wsp.edu
+SET OFFICE_PATH=c:\program files (x86)\microsoft office\office16\
+
+SET /p KMS_URL=Enter KMS Server URL/IP [default %DEFAULT_KMS_URL%]:
+if "%KMS_URL%"==""
+    SET KMS_URL=%DEFAULT_KMS_URL%
+    
+echo Setting KMS URL: %KMS_URL%
+%windir%\system32\cscript slmgr.vbs /skms %KMS_URL%
+%windir%\system32\cscript slmgr.vbs /ato
+
+
+
+SET /p OFFICE_URL=Enter Office Server URL/IP [default %DEFAULT_OFFICE_URL%]:
+if "%OFFICE_URL%"==""
+    SET KMS_URL=%DEFAULT_OFFICE_URL%
+
+%windir%\system32\cscript %OFFICE_PATH%ospp.vbs /sethst:%OFFICE_URL%
+%windir%\system32\cscript %OFFICE_PATH%cscript ospp.vbs /act
+
+:skipsetkmsserver
+
+
+
 rem run vc_installer
 echo -- %ESC_GREEN%Installing required packages - please wait... %ESC_RESET% --
 call %~dp0Services\mgmt\rc\install_vc_runtimes.cmd
@@ -114,53 +164,6 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 2
 )
 
-
-rem Contributions from Mike Huse - https://github.com/operepo/ope/issues/86
-:dtime_start
-echo %ESC_GREEN%[ ---- Updating System Time ---- ]%ESC_RESET%
-%windir%\system32\date /T
-%windir%\system32\time /T
-echo Is the system date/time correct?
-choice /C yn /T 15 /D y /M "Press N to set date/time [y/n]"
-if errorlevel 1 goto skipsetdatetime
-%windir%\system32\time
-%windir%\system32\date
-
-:skipsetdatetime
-
-rem Add code to update KMS and run licensing
-:set_kms_start
-echo %ESC_GREEN%[ ---- Configuring Laptop to get its Windows licensing ---- ]%ESC_RESET%
-
-rem  ***** Change IP Address and KMS name for your server below. You can also replace the IP address with the KMS name as well ******
-echo Do you want to set KMS and Office activation servers?
-choice /C yn /M "Press Y to set activation servers [y/n]"
-if errorlevel 2 goto skipsetkmsserver
-set KMS_URL=
-rem TODO - Pull this from the registry?
-set DEFAULT_KMS_URL=172.29.20.115
-set OFFICE_URL=
-set DEFAULT_OFFICE_URL=wwcc-kms.wwcc-wsp.edu
-SET OFFICE_PATH=c:\program files (x86)\microsoft office\office16\
-
-SET /p KMS_URL=Enter KMS Server URL/IP [default %DEFAULT_KMS_URL%]:
-if "%KMS_URL%"==""
-    SET KMS_URL=%DEFAULT_KMS_URL%
-    
-echo Setting KMS URL: %KMS_URL%
-%windir%\system32\cscript slmgr.vbs /skms %KMS_URL%
-%windir%\system32\cscript slmgr.vbs /ato
-
-
-
-SET /p OFFICE_URL=Enter Office Server URL/IP [default %DEFAULT_OFFICE_URL%]:
-if "%OFFICE_URL%"==""
-    SET KMS_URL=%DEFAULT_OFFICE_URL%
-
-%windir%\system32\cscript %OFFICE_PATH%ospp.vbs /sethst:%OFFICE_URL%
-%windir%\system32\cscript %OFFICE_PATH%cscript ospp.vbs /act
-
-:skipsetkmsserver
 
 :startcredential
 rem call the main credential script
