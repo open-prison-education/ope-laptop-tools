@@ -123,7 +123,8 @@ echo -- %ESC_GREEN%Installing required packages - please wait... %ESC_RESET% --
 call %~dp0Services\mgmt\rc\install_vc_runtimes.cmd
 echo.
 
-
+rem Add win defender exclusion for our ope folder
+PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& {Add-MpPreference -ExclusionPath '%PROGRAMDATA%\ope'}"
 
 echo -- %ESC_GREEN%Unlocking Machine - please wait... %ESC_RESET% --
 echo.
