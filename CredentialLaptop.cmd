@@ -120,7 +120,7 @@ cscript %OFFICE_PATH%ospp.vbs /act
 
 rem run vc_installer
 echo -- %ESC_GREEN%Installing required packages - please wait... %ESC_RESET% --
-call %~dp0Services\mgmt\rc\install_vc_runtimes.cmd
+call "%~dp0Services\mgmt\rc\install_vc_runtimes.cmd"
 echo.
 
 rem Add win defender exclusion for our ope folder
@@ -128,7 +128,7 @@ PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& {Add-MpPreference -Exc
 
 echo -- %ESC_GREEN%Unlocking Machine - please wait... %ESC_RESET% --
 echo.
-call %~dp0Services\mgmt\mgmt.exe unlock_machine
+call "%~dp0Services\mgmt\mgmt.exe" unlock_machine
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%*** ERROR - Failed to unlock machine - Quitting. ***%ESC_RESET%
@@ -144,7 +144,7 @@ if %ERRORLEVEL% NEQ 0 (
 rem run update from Git server
 echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
 rem NOTE - Need to git_pull outside of mgmt.exe so we can update those files
-call %~dp0bin\PullUpdates.cmd %GIT_BRANCH%
+call "%~dp0bin\PullUpdates.cmd" %GIT_BRANCH%
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
@@ -159,7 +159,7 @@ if %ERRORLEVEL% NEQ 0 (
 :runinstall
 rem install services
 echo %ESC_GREEN%-- Installing OPE Services...%ESC_RESET%
-call %~dp0Services\mgmt\install_service.cmd
+call "%~dp0bin\install_service.cmd"
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** ERROR - Failed to install OPE services. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
@@ -173,8 +173,8 @@ if %ERRORLEVEL% NEQ 0 (
 :startcredential
 rem call the main credential script
 echo %ESC_GREEN%-- Starting credential process...%ESC_RESET%
-rem call %~dp0Services\mgmt\mgmt.exe credential_laptop
-call %programdata%\ope\Services\mgmt\mgmt.exe credential_laptop
+rem call "%~dp0Services\mgmt\mgmt.exe" credential_laptop
+call "%programdata%\ope\Services\mgmt\mgmt.exe" credential_laptop
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******%ESC_RESET%
@@ -187,8 +187,8 @@ if %ERRORLEVEL% NEQ 0 (
 :lock_machine
 rem Lock machine down which will enable user account
 echo %ESC_GREEN%-- Locking Machine...%ESC_RESET%
-rem call %~dp0Services\mgmt\mgmt.exe lock_machine
-call %programdata%\ope\Services\mgmt\mgmt.exe lock_machine
+rem call "%~dp0Services\mgmt\mgmt.exe" lock_machine
+call "%programdata%\ope\Services\mgmt\mgmt.exe" lock_machine
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo %ESC_RED%****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. Try mgmt lock_machine again to see if you can lock it manually. *******%ESC_RESET%
