@@ -119,9 +119,16 @@ cscript %OFFICE_PATH%ospp.vbs /act
 
 
 rem run vc_installer
+echo Do you want to install the VC Runtimes?
+choice /C yn /T 5 /D n /M "Press Y to set install VC Runtimes [y/n]"
+if errorlevel 2 goto skipinstallvcruntimes
 echo -- %ESC_GREEN%Installing required packages - please wait... %ESC_RESET% --
 call "%~dp0Services\mgmt\rc\install_vc_runtimes.cmd"
 echo.
+:skipinstallvcruntimes
+
+
+call "%~dp0Services\mgmt\mgmt.exe" config_once
 
 rem Add win defender exclusion for our ope folder
 PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& {Add-MpPreference -ExclusionPath '%PROGRAMDATA%\ope'}"
