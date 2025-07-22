@@ -423,11 +423,11 @@ class CredentialProcess:
         is_win10_plus = False
         is_win_home = True
         os_caption = CredentialProcess.COMPUTER_INFO["os_caption"].lower()
-        if "microsoft windows 10" in os_caption or "microsoft windows 11" in os_caption:
+        if any(version in os_caption for version in ["microsoft windows 10", "microsoft windows 11", "microsoft windows server"]):
             is_win10_plus = True
-        if "enterprise" in os_caption or "pro" in os_caption or "professional" in os_caption or "education" in os_caption or "workstation" in os_caption:
+        if any(version in os_caption for version in ["enterprise", "pro", "professional", "education", "workstation", "server"]):
             is_win_home = False
-        
+
         if is_win10_plus is not True:
             p("}}rbNOT RUNNING ON WINDOWS 10 or 11!!!\nThis software is designed to work win windows 10 or 11 ONLY!\n (Enterprise, Professional, or Education OK, Home edition NOT supported)}}xx")
             return False
