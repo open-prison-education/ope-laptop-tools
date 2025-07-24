@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['mgmt.py'],
+    ['mgmt/mgmt.py'],
     pathex=[],
     binaries=[],
-    datas=[('logo_icon.ico', '.'), ('rc', 'rc'), ('mgmt.version', '.'), ('install_service.cmd', '.')],
+    datas=[('logo_icon.ico', '.'), ('rc', 'rc'), ('mgmt/mgmt.version', '.'), ('mgmt/install_service.cmd', '.')],
     hiddenimports=['sip', 'win32timezone', 'simplejson'],
     hookspath=[],
     hooksconfig={},

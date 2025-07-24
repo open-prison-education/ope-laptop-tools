@@ -20,8 +20,9 @@ import traceback
 # Need this for winsys exceptions
 import winsys
 from winsys import accounts
-from color import p
-import util
+
+from common.color import p
+from common import util
 
 from mgmt_RegistrySettings import RegistrySettings
 from mgmt_Computer import Computer

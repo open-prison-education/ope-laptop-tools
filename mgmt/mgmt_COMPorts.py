@@ -1,5 +1,6 @@
 
-from color import p
+
+from common.color import p
 
 from mgmt_Computer import Computer
 

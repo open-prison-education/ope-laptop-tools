@@ -23,6 +23,37 @@
 # import ctypes
 # import wmi
 # import traceback
+import os
+import sys
+from pathlib import Path
+
+# Get the absolute path to the project root directory
+# This will work regardless of where the script is run from
+project_root = Path(__file__).resolve().parent.parent
+
+# Add project root to Python path if not already there
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+# Debug prints (you can remove these later)
+print("Project root:", project_root)
+print("Python path:", sys.path)
+
+# Now import the modules
+try:
+    from common import util
+    print("Successfully imported common.util")
+except ImportError as e:
+    print(f"Failed to import common.util: {e}")
+    sys.exit(1)
+
+# Import local modules
+try:
+    from mgmt_EventLog import EventLog
+    print("Successfully imported mgmt_EventLog")
+except ImportError as e:
+    print(f"Failed to import mgmt_EventLog: {e}")
+    sys.exit(1)
 
 # Required imports - helps nuitka
 import simplejson
@@ -31,16 +62,17 @@ import win32trace
 import win32api
 import sys
 import os
+
 import traceback
 
-import util
+from common import util
 
 # Pull in logger first and set it up!
 from mgmt_EventLog import EventLog
 global LOGGER
 LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-mgmt.log'), service_name="OPEMgmt")
 
-from color import p, set_log_level
+from common.color import p, set_log_level
 
 from mgmt_UserAccounts import UserAccounts
 from mgmt_FolderPermissions import FolderPermissions

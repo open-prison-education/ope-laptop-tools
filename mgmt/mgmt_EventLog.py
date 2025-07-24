@@ -9,7 +9,7 @@ import traceback
 
 #from winsys import event_logs
 
-import util
+from common import util
 
 
 class EventLog:

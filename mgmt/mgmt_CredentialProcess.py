@@ -17,9 +17,10 @@ from mgmt_SystemTime import SystemTime
 from mgmt_LockScreen import LockScreen
 from mgmt_NetworkDevices import NetworkDevices
 
-from color import p
+
+from common.color import p
 from p_state import p_state
-import util
+from common import util
 
 
 class CredentialProcess:
