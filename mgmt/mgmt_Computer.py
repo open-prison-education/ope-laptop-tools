@@ -23,8 +23,9 @@ import logging
 pil_logger = logging.getLogger('PIL')
 pil_logger.setLevel(logging.INFO)
 
-import util
-from color import p
+from common import util
+
+from common.color import p
 
 from mgmt_RegistrySettings import RegistrySettings
 

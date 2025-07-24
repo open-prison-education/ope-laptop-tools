@@ -10,9 +10,10 @@ import subprocess
 import sys
 import os
 
-from color import p
 
-import util
+from common.color import p
+
+from common import util
 from mgmt_UserAccounts import UserAccounts
 from mgmt_ProcessManagement import ProcessManagement
 

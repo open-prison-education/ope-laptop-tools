@@ -1,5 +1,6 @@
-import os
 import sys
+import os
+
 import subprocess
 import ctypes
 import shutil
@@ -10,8 +11,8 @@ import win32process
 import win32con
 import win32profile
 
-import util
-from color import p
+from common import util
+from common.color import p
 
 from mgmt_UserAccounts import UserAccounts
 from mgmt_RegistrySettings import RegistrySettings
@@ -168,14 +169,14 @@ class ProcessManagement:
         only_for = "git_clone"
 
         if branch is None:
-            branch = util.get_param(2, None, only_for=only_for)
+            branch = utilget_param(2, None, only_for=only_for)
         if branch is None:
             branch = RegistrySettings.get_git_branch()
 
         smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
         smc_git = smc_url.replace("https", "git").replace("http", "git")
         
-        app_path = util.get_app_folder()
+        app_path = utilget_app_folder()
 
         # Make sure the folder exists
         ope_laptop_binaries_path = os.path.expandvars("%programdata%\\ope\\tmp\\ope_laptop_binaries")
@@ -259,12 +260,12 @@ class ProcessManagement:
         only_for = "git_pull"
 
         if branch is None:
-            branch = util.get_param(2, None, only_for=only_for)
+            branch = utilget_param(2, None, only_for=only_for)
         if branch is None:
             branch = RegistrySettings.get_git_branch()
         
         if binaries_path is None:
-            binaries_path = util.get_param(3, None, only_for=only_for)
+            binaries_path = utilget_param(3, None, only_for=only_for)
         if binaries_path is None:
             binaries_path = "%programdata%\\ope\\tmp\\ope_laptop_binaries"
 
@@ -275,7 +276,7 @@ class ProcessManagement:
         binaries_path = binaries_path.strip('"')
         binaries_path = binaries_path.strip("'")
         
-        app_path = util.get_app_folder()
+        app_path = utilget_app_folder()
 
         # Make sure the folder exists
         ope_laptop_binaries_path = os.path.abspath(os.path.expandvars(binaries_path)).replace("\"", "")

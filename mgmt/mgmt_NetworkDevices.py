@@ -5,8 +5,9 @@ import wmi
 import os
 import psutil
 
-from color import p
-import util
+
+from common.color import p
+from common import util
 
 # Need this so scanNics doesn't fail
 #pythoncom.CoInitialize()

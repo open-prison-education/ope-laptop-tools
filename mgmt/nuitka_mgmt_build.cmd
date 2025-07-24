@@ -87,7 +87,7 @@ python -m nuitka ^
     --standalone ^
     --file-reference-choice=runtime ^
     --mingw64 ^
-    --windows-icon-from-ico=logo_icon.ico ^
+    --windows-icon-from-ico=..\common\logo_icon.ico ^
     --windows-company-name=OPE_PROJECT ^
     --windows-product-name=MGMT_TOOL ^
     --windows-file-version=%VERSION% ^

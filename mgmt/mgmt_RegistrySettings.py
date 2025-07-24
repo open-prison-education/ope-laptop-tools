@@ -24,8 +24,9 @@ registry.Registry.DEFAULT_ACCESS=REGISTRY_ACCESS.KEY_READ|REGISTRY_ACCESS.KEY_WO
 winsys_logger = logging.getLogger("winsys")
 winsys_logger.setLevel(50)  # CRITIAL = 50
 
-from color import p
-import util
+
+from common.color import p
+from common import util
 
 class RegistrySettings:
     # Default registry path where settings are stored    

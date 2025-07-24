@@ -5,8 +5,9 @@ import shutil
 from mgmt_ProcessManagement import ProcessManagement
 from mgmt_RegistrySettings import RegistrySettings
 from mgmt_Computer import Computer
-import util
-from color import p
+from common import util
+
+from common.color import p
 
 
 
