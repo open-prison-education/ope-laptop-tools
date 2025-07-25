@@ -4,7 +4,7 @@ from mgmt_EventLog import EventLog
 import mgmt_Computer
 import mgmt_RegistrySettings
 
-from color import strip_color_codes
+from common.color import strip_color_codes
 
 def p_state(txt="", end=True, state="WORKING", title="UPDATING", kill_logon=False):
     # Print to the OPE-STATE logger

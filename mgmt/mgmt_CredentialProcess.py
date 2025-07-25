@@ -19,7 +19,7 @@ from mgmt_NetworkDevices import NetworkDevices
 
 
 from common.color import p
-from p_state import p_state
+from common.p_state import p_state
 from common import util
 
 
