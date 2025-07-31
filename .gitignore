@@ -10,4 +10,6 @@
 *.pyzwz
 *.build
 *.dist
+*.version
+
 
