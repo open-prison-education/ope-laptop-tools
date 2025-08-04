@@ -13,7 +13,7 @@ set year=%year:~2,2%
 set todayVersion=%year%.%month%.%day%
 
 :: Path to the mgmt.version file
-set jsonFile=mgmt.version
+set jsonFile=.\mgmt\mgmt.version
 
 :: Initialize version counter
 set versionSuffix=0
