@@ -24,8 +24,8 @@ from winsys import accounts
 from common.color import p
 from common import util
 
-from mgmt_RegistrySettings import RegistrySettings
-from mgmt_Computer import Computer
+from mgmt.mgmt_RegistrySettings import RegistrySettings
+from mgmt.mgmt_Computer import Computer
 
 
 class UserAccounts:

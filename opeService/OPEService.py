@@ -1,7 +1,4 @@
-# Needed for external stuff?
-#import pythoncom
-
-## Service Imports
+# Service Imports
 import win32serviceutil
 import win32service
 import win32event
@@ -10,40 +7,51 @@ import socket
 
 import win32evtlog
 import win32ts
-
 import win32timezone
-
-import win32traceutil
 import traceback
 import threading
+
+# comment this out for debugging as it directs output to win32trace remote collector
+import win32traceutil 
 
 # Needed for device events
 import win32gui
 import win32gui_struct
 import win32con
-
 import time
 import random
 import subprocess
 import sys
 import os
 import random
+from pathlib import Path
+
+# Get the absolute path to the project root directory
+project_root = Path(__file__).resolve().parent.parent
+print(f"project_root: {project_root}")
+
+# Add project root to Python path if not already there
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from collections import OrderedDict
 
-import util
+from common import util
 
-import mgmt_UserAccounts
+from mgmt import mgmt_UserAccounts
+
 
 # Pull in logger first and set it up!
-from mgmt_EventLog import EventLog
+from mgmt.mgmt_EventLog import EventLog
+
+
 global LOGGER
 LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-service.log'), service_name="OPEService")
 
-from color import p, set_log_level, get_log_level
+from common.color import p, set_log_level, get_log_level
 
 # Import local modules
-from mgmt_RegistrySettings import RegistrySettings
+from mgmt.mgmt_RegistrySettings import RegistrySettings
 
 
 class OPEService(win32serviceutil.ServiceFramework):
@@ -799,6 +807,9 @@ class OPEService(win32serviceutil.ServiceFramework):
         
 
 if __name__ == '__main__':
+
+    print("OPEService starting...")
+    
     if len(sys.argv) == 1:
         try:
             servicemanager.Initialize()
@@ -806,13 +817,11 @@ if __name__ == '__main__':
             servicemanager.StartServiceCtrlDispatcher()
         except Exception as ex:
             p("}}rbUnknown Exception! }}xx\n" + str(ex))
-            #sys.exit(2)
             os._exit(2)
     else:
         try:
             win32serviceutil.HandleCommandLine(OPEService)
         except Exception as ex:
             p("}}rbUnknown Exception! }}xx\n" + str(ex))
-            #sys.exit(2)
             os._exit(2)
 
