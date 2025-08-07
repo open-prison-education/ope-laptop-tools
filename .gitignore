@@ -11,5 +11,5 @@
 *.build
 *.dist
 *.version
-
-
+*build*
+*dist*
