@@ -2,7 +2,7 @@ import os
 import common.util
 import psutil
 #import logging
-from mgmt_EventLog import EventLog
+from mgmt.mgmt_EventLog import EventLog
 
 global LOGGER
 LOGGER = None  # Grab it later - give it a chance to get initialized

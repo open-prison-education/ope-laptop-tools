@@ -27,7 +27,7 @@ from common import util
 
 from common.color import p
 
-from mgmt_RegistrySettings import RegistrySettings
+from mgmt.mgmt_RegistrySettings import RegistrySettings
 
 
 class Computer:
