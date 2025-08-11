@@ -23,7 +23,7 @@ class GroupPolicy:
         gpo_name = util.get_param(2, "exported_gpo", only_for=only_for)
 
         # LGPO.exe is in the rc sub folder of the mgmt tool
-        app_folder = util.get_app_folder()
+        app_folder = os.path.dirname(os.path.abspath(__file__))
         lgpo_path = os.path.join(app_folder, "rc")
         gpo_path = os.path.join(lgpo_path, gpo_name)
         
@@ -51,7 +51,7 @@ class GroupPolicy:
     @staticmethod
     def get_gpo_count(gpo_folder=None):
         if gpo_folder is None:
-            app_folder = util.get_app_folder()
+            app_folder = os.path.dirname(os.path.abspath(__file__))
             lgpo_path = os.path.join(app_folder, "rc")
 
             # Check to see if more then 1 folder exists in the gpo folder
@@ -109,7 +109,7 @@ class GroupPolicy:
         gpo_name_post = gpo_name + "_post"
 
         # LGPO.exe is in the rc sub folder of the mgmt tool
-        app_folder = util.get_app_folder()
+        app_folder = os.path.dirname(os.path.abspath(__file__))
         lgpo_path = os.path.join(app_folder, "rc")
 
         # Check to see if more then 1 folder exists in the gpo folder
@@ -255,7 +255,7 @@ class GroupPolicy:
         policy_file_name= util.get_param(2, "firewall_config.wfw", only_for=only_for)
 
         # Should be in RC sub folder under the app
-        app_folder = util.get_app_folder()
+        app_folder = os.path.dirname(os.path.abspath(__file__))
         rc_path = os.path.join(app_folder, "rc")
         policy_file_path = os.path.join(rc_path, policy_file_name)
 

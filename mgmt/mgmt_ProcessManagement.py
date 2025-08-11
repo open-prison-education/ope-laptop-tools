@@ -176,7 +176,7 @@ class ProcessManagement:
         smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
         smc_git = smc_url.replace("https", "git").replace("http", "git")
         
-        app_path = utilget_app_folder()
+        app_path = os.path.dirname(os.path.abspath(__file__))
 
         # Make sure the folder exists
         ope_laptop_binaries_path = os.path.expandvars("%programdata%\\ope\\tmp\\ope_laptop_binaries")
@@ -276,7 +276,7 @@ class ProcessManagement:
         binaries_path = binaries_path.strip('"')
         binaries_path = binaries_path.strip("'")
         
-        app_path = utilget_app_folder()
+        app_path = os.path.dirname(os.path.abspath(__file__))
 
         # Make sure the folder exists
         ope_laptop_binaries_path = os.path.abspath(os.path.expandvars(binaries_path)).replace("\"", "")
