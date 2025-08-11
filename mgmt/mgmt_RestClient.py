@@ -19,7 +19,6 @@ import ssl
 import json
 
 from common import util
-
 from common.color import p
 
 from mgmt_Encryption import Encryption

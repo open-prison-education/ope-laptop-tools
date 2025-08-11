@@ -28,10 +28,7 @@ import random
 from collections import OrderedDict
 
 from common import util
-
 from mgmt import mgmt_UserAccounts
-
-
 # Pull in logger first and set it up!
 from mgmt.mgmt_EventLog import EventLog
 
