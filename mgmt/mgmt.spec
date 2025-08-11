@@ -2,27 +2,26 @@
 
 
 a = Analysis(
-    ['OPEService.py'],
+    ['mgmt/mgmt.py'],
     pathex=[],
     binaries=[],
-    datas=[('logo_icon.ico', '.')],
-    hiddenimports=['sip', 'win32timezone', 'servicemanager', 'simplejson'],
+    datas=[('logo_icon.ico', '.'), ('rc', 'rc'), ('mgmt/mgmt.version', '.'), ('mgmt/install_service.cmd', '.')],
+    hiddenimports=['sip', 'win32timezone', 'simplejson'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    noarchive=False,
-    optimize=0,
+    noarchive=True,
 )
 pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
-    [],
+    [('v', None, 'OPTION')],
     exclude_binaries=True,
-    name='OPEService',
-    debug=False,
+    name='mgmt',
+    debug=True,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
@@ -41,5 +40,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='OPEService',
+    name='mgmt',
 )

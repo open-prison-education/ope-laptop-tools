@@ -5,12 +5,13 @@ import json
 
 import wmi
 
-import util
+from common import util
 from mgmt_RegistrySettings import RegistrySettings
 from mgmt_ProcessManagement import ProcessManagement
 
-from color import p
-from p_state import p_state
+
+from common.color import p
+from common.p_state import p_state
 
 class SystemTime:
 

@@ -23,24 +23,23 @@
 # import ctypes
 # import wmi
 # import traceback
+import os
 
 # Required imports - helps nuitka
 import simplejson
 
 import win32trace
 import win32api
-import sys
-import os
 import traceback
 
-import util
+from common import util
 
 # Pull in logger first and set it up!
 from mgmt_EventLog import EventLog
 global LOGGER
 LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-mgmt.log'), service_name="OPEMgmt")
 
-from color import p, set_log_level
+from common.color import p, set_log_level
 
 from mgmt_UserAccounts import UserAccounts
 from mgmt_FolderPermissions import FolderPermissions

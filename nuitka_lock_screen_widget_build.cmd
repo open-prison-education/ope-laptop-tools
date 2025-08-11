@@ -28,11 +28,14 @@ python -m nuitka ^
     --plugin-enable=pyqt5 ^
     --plugin-enable=numpy ^
     --windows-disable-console ^
-    --windows-icon-from-ico=logo_icon.ico ^
+    --windows-icon-from-ico=.\common\logo_icon.ico ^
     --windows-company-name=OPE_PROJECT ^
     --windows-product-name=LOCK_SCREEN_WIDGET ^
     --windows-file-version=%VERSION% ^
     --windows-product-version=%VERSION% ^
     --windows-file-description="OPE Lock Screen Widget" ^
-    lock_screen_widget.py
+    --output-dir=.\build ^
+    .\lock_screen_widget\lock_screen_widget.py
 
+echo Move lock_screen_widget.dist to dist directory
+move /Y ".\build\lock_screen_widget.dist" ".\dist\lock_screen_widget"

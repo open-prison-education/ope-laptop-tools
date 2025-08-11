@@ -5,7 +5,8 @@ import pyaes as AES
 import threading
 import base64
 
-from color import p
+
+from common.color import p
 
 def fast_urandom16(urandom=[], locker=threading.RLock()):
     """
