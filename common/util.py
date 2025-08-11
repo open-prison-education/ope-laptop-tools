@@ -21,6 +21,8 @@ CMD_FUNCTION = ""
 
 global APP_FOLDER
 APP_FOLDER = None
+
+# it was used in mgmt module
 def get_app_folder():
     global APP_FOLDER
     ret = ""

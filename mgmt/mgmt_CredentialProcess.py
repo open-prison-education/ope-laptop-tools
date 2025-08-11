@@ -32,9 +32,9 @@ class CredentialProcess:
 
         # Try to load the version file
         if version_file is None:
-            app_folder = util.get_app_folder()
+            app_folder = os.path.dirname(os.path.abspath(__file__))
             version_file = os.path.join(app_folder, "mgmt.version")
-        
+
         if os.path.exists(version_file):
             try:
                 f = open(version_file, "r")
@@ -45,7 +45,7 @@ class CredentialProcess:
                 p("}}rbError reading mgmt.version!}}xx\n" + str(ex))
 
         else:
-            p("}}rnNo mgmt.version file exists!")
+            p(f"}}rnNo mgmt.version file exists at {version_file}!")
 
         return ret
 
@@ -513,7 +513,7 @@ class CredentialProcess:
         # Get the smc_url - pull the ca.crt file from there
         smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
         
-        app_path = util.get_app_folder()
+        app_path = os.path.dirname(os.path.abspath(__file__))
         rc_path = os.path.join(app_path, "rc")
         wget_path = os.path.join(rc_path, "wget.exe")
         certmgr_path = os.path.join(rc_path, "certmgr.exe")

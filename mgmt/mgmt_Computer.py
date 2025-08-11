@@ -339,13 +339,14 @@ class Computer:
         font_file2 = "rc/consola.ttf"
         font_file3 = "rc/cour.ttf"
         font_file4 = "rc/courbd.ttf"
-        font_large = ImageFont.truetype(os.path.join(util.APP_FOLDER, font_file1), 32)
-        font_small = ImageFont.truetype(os.path.join(util.APP_FOLDER, font_file4), 14)
-        font_xsmall = ImageFont.truetype(os.path.join(util.APP_FOLDER, font_file2), 12)
+        app_folder = os.path.dirname(os.path.abspath(__file__))
+        font_large = ImageFont.truetype(os.path.join(app_folder, font_file1), 32)
+        font_small = ImageFont.truetype(os.path.join(app_folder, font_file4), 14)
+        font_xsmall = ImageFont.truetype(os.path.join(app_folder, font_file2), 12)
         draw = ImageDraw.Draw(i)
 
         # Load watermark
-        wmark_path = os.path.join(util.APP_FOLDER, "rc/watermark.png")
+        wmark_path = os.path.join(app_folder, "rc/watermark.png")
         watermark_image = Image.open(wmark_path)
         #watermark_image.putalpha(1)
 
