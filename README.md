@@ -14,11 +14,12 @@ pip install - r modules.txt
 Use Nuitka for all builds but OPEService. Nuitka doesn't work for services unless you pay for commercial packages.
 
 .\nuitka_mgmt_build.cmd (for mgmt)
-.\nuitka_lock_screen_widget_build.cmd - for lock screen widget
-.\nuitka_sshot_build.cmd
 
-For OPEService
-python .\build_svc.py
+.\nuitka_lock_screen_widget_build.cmd (for lock screen widget)
+
+.\nuitka_sshot_build.cmd (for screenshot)
+
+python .\build_svc.py (for OPEService)
 
 output for all built apps and services is under dist directory.
 
