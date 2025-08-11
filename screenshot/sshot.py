@@ -20,11 +20,11 @@ import traceback
 
 # Look at using mss??
 
-import util
-from mgmt_EventLog import EventLog
+from common import util
+from mgmt.mgmt_EventLog import EventLog
 global LOGGER
 LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-sshot.log'), service_name="OPEScreenShot")
-from color import p
+from common.color import p
 
 PIC_TYPE = ".png"
 
@@ -136,9 +136,16 @@ def grabScreenShot():
         banner_width = sshot_img.width
         banner_img = Image.new('RGBA', (banner_width, banner_height), 'black')
         draw = ImageDraw.Draw(banner_img)
-        # Draw Rectangle
-        # draw.rectangle((0, bmInfo['bmHeight'], 100, 30), outline='blue', fill='white')
-        font = ImageFont.truetype(os.path.join(util.APP_FOLDER, "STENCIL.ttf"), 16)
+
+        # Try to load the custom font
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        font_path = os.path.join(script_dir, "STENCIL.ttf")
+        try:
+            font = ImageFont.truetype(font_path, 16)
+        except Exception as font_ex:
+            p(f"Error: Could not load font at {font_path}: {font_ex}." , log_level=1)
+            return False
+
         draw.text((5, 5), "Current User: " + str(curr_user), (255, 255, 255), font=font)
         draw.text((5, 20), str(datetime.datetime.now()), (255, 255, 255), font=font)
         draw.text((300, 5), "Time Stamp: " + sshot_time, (255, 255, 255), font=font)

@@ -41,13 +41,13 @@ rem --nofollow-import-to=tkinter --nofollow-import-to=pyqt5 --nofollow-import-to
 python -m nuitka ^
     --standalone ^
     --mingw64 ^
-    --windows-icon-from-ico=logo_icon.ico ^
+    --windows-icon-from-ico=.\common\logo_icon.ico ^
     --windows-company-name=OPE_PROJECT ^
     --windows-product-name=OPEService ^
     --windows-file-version=%VERSION% ^
     --windows-product-version=%VERSION% ^
     --windows-file-description="OPEService - OPE Service Utility" ^
     --disable-plugin=numpy --disable-plugin=tk-inter --disable-plugin=pyqt5 --disable-plugin=pyside2 ^
-    sshot.py
+    .\screenshot\sshot.py
 
- xcopy /y .\STENCIL.TTF .\sshot.dist\
+ xcopy /y .\screenshot\STENCIL.TTF .\sshot.dist\
