@@ -8,3 +8,8 @@
 *.pywz
 *.pyzw
 *.pyzwz
+*.build
+*.dist
+*.version
+*build*
+*dist*

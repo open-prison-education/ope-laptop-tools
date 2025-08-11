@@ -18,8 +18,8 @@ import ssl
 #import base64
 import json
 
-import util
-from color import p
+from common import util
+from common.color import p
 
 from mgmt_Encryption import Encryption
 from mgmt_RegistrySettings import RegistrySettings

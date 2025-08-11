@@ -13,7 +13,7 @@ set year=%year:~2,2%
 set todayVersion=%year%.%month%.%day%
 
 :: Path to the mgmt.version file
-set jsonFile=mgmt.version
+set jsonFile=.\mgmt\mgmt.version
 
 :: Initialize version counter
 set versionSuffix=0
@@ -83,19 +83,28 @@ rem python -m nuitka --python-arch=x86 --standalone  mgmt.py
 rem --noinclude-pytest-mode=nofollow --noinclude-setuptools-mode=nofollow ^
 rem --nofollow-import-to=tkinter --nofollow-import-to=pyqt5 --nofollow-import-to=numpy ^
 
+@echo off
+cd /d %~dp0
+
 python -m nuitka ^
     --standalone ^
     --file-reference-choice=runtime ^
     --mingw64 ^
-    --windows-icon-from-ico=logo_icon.ico ^
+    --windows-icon-from-ico=.\common\logo_icon.ico ^
     --windows-company-name=OPE_PROJECT ^
     --windows-product-name=MGMT_TOOL ^
     --windows-file-version=%VERSION% ^
     --windows-product-version=%VERSION% ^
     --windows-file-description="MGMT Tool - used to run system commands for credentialing laptops" ^
     --disable-plugin=numpy --disable-plugin=tk-inter --disable-plugin=pyqt5 --disable-plugin=pyside2 ^
-    mgmt.py
+    --follow-imports ^
+    --include-package=common ^
+    --output-dir=.\build ^
+    mgmt\mgmt.py
 
-echo Copying mgmt.version and rc files to dist folder
-xcopy /y .\mgmt.version .\mgmt.dist\
-xcopy /EQy .\rc .\mgmt.dist\rc\
+echo Move mgmt.dist to dist directory
+move /Y ".\build\mgmt.dist" ".\dist\mgmt"
+
+echo Copy mgmt.version and rc files to dist folder
+xcopy /EQy .\mgmt\mgmt.version .\dist\mgmt\
+xcopy /EQy .\mgmt\rc .\dist\mgmt\rc\

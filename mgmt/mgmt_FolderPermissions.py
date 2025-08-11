@@ -21,9 +21,10 @@ import traceback
 import time
 import logging
 
-import util
+from common import util
 
-from color import p
+
+from common.color import p
 
 from mgmt_ProcessManagement import ProcessManagement
 from mgmt_RegistrySettings import RegistrySettings

@@ -1,8 +1,8 @@
 import os
-import util
+import common.util
 import psutil
 #import logging
-from mgmt_EventLog import EventLog
+from mgmt.mgmt_EventLog import EventLog
 
 global LOGGER
 LOGGER = None  # Grab it later - give it a chance to get initialized
@@ -31,7 +31,7 @@ def init_logger():
         LOGGER = EventLog.get_current_instance()
         if LOGGER is None:
             # Make default logger
-            LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-mgmt.log'), service_name="OPE")
+            LOGGER = EventLog(os.path.join(common.util.LOG_FOLDER, 'ope-mgmt.log'), service_name="OPE")
         # if LOGGER is None:
         #     print("Unable to get logger instance!")
         # else:
