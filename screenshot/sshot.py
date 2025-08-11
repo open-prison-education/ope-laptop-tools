@@ -137,7 +137,7 @@ def grabScreenShot():
         banner_img = Image.new('RGBA', (banner_width, banner_height), 'black')
         draw = ImageDraw.Draw(banner_img)
 
-        # Try to load the custom font
+        # load custom font
         script_dir = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(script_dir, "STENCIL.ttf")
         try:

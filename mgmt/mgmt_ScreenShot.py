@@ -12,7 +12,6 @@ import os
 
 
 from common.color import p
-
 from common import util
 from mgmt_UserAccounts import UserAccounts
 from mgmt_ProcessManagement import ProcessManagement
