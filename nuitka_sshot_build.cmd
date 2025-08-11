@@ -48,6 +48,11 @@ python -m nuitka ^
     --windows-product-version=%VERSION% ^
     --windows-file-description="OPEService - OPE Service Utility" ^
     --disable-plugin=numpy --disable-plugin=tk-inter --disable-plugin=pyqt5 --disable-plugin=pyside2 ^
+    --output-dir=.\build ^
     .\screenshot\sshot.py
 
- xcopy /y .\screenshot\STENCIL.TTF .\sshot.dist\
+echo Move sshot.dist to dist dir
+move /Y ".\build\sshot.dist" ".\dist\sshot"
+
+echo Copy font to sshot dist
+xcopy /y .\screenshot\STENCIL.TTF .\dist\sshot\

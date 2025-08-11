@@ -99,8 +99,12 @@ python -m nuitka ^
     --disable-plugin=numpy --disable-plugin=tk-inter --disable-plugin=pyqt5 --disable-plugin=pyside2 ^
     --follow-imports ^
     --include-package=common ^
+    --output-dir=.\build ^
     mgmt\mgmt.py
 
-echo Copying mgmt.version and rc files to dist folder
-xcopy /y .\mgmt\mgmt.version .\mgmt.dist\
-xcopy /EQy .\mgmt\rc .\mgmt.dist\rc\
+echo Move mgmt.dist to dist directory
+move /Y ".\build\mgmt.dist" ".\dist\mgmt"
+
+echo Copy mgmt.version and rc files to dist folder
+xcopy /EQy .\mgmt\mgmt.version .\dist\mgmt\
+xcopy /EQy .\mgmt\rc .\dist\mgmt\rc\

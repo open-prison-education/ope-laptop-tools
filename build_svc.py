@@ -78,7 +78,8 @@ build_params = (
     f" --add-data {os.path.join(current_dir, 'common')};common " + CUSTOM_EVENT_LOG_DLL +
     f" --add-data {os.path.join(current_dir, 'mgmt')};mgmt" +
     f" --noconfirm --icon {os.path.join(current_dir, 'common', 'logo_icon.ico')}" +
-    f" --specpath {spec_path}"
+    f" --specpath {spec_path}" +
+    f" --distpath {os.path.join(current_dir, "dist")}"
 )
 # == Build the app for windows using pyinstaller ==
 print(build_params)
