@@ -92,22 +92,6 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 2
 )
 
-@REM  DO we need this now?
-@REM rem run update from Git server
-@REM echo %ESC_GREEN%-- Getting latest updates from local git server...%ESC_RESET%
-@REM rem NOTE - Need to git_pull outside of mgmt.exe so we can update those files
-@REM call "%~dp0bin\PullUpdates.cmd" %GIT_BRANCH%
-@REM if %ERRORLEVEL% NEQ 0 (
-@REM     echo.
-@REM     echo %ESC_YELLOW%*** WARNING - Unable to pull updates from online or local server - You may not be running the latest version of the laptop software! ***%ESC_RESET%
-@REM     echo.
-@REM     echo.
-@REM     rem /T 3
-@REM     choice /C yn /T 15 /D y /M "Do you want to continue anyway? (y/n - default y in 15 seconds): "
-@REM     if [!errorlevel!] EQU [1] goto runinstall
-@REM     exit /b 2
-@REM )
-
 :runinstall
 rem install services
 echo %ESC_GREEN%-- Installing OPE Services...%ESC_RESET%
