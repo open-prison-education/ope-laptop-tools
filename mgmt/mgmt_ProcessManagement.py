@@ -448,9 +448,9 @@ class ProcessManagement:
 
 if __name__ == "__main__":
     # >> nul 2>&1
-    long_running_cmd = os.path.expandvars("%programdata%\\ope\\tmp\\ope_laptop_binaries\\Services\\mgmt\\rc\\upgrade_ope.cmd >> %programdata%\\ope\\tmp\\log\\upgrade.log 2>&1")
+    # long_running_cmd = os.path.expandvars("%programdata%\\ope\\tmp\\ope_laptop_binaries\\Services\\mgmt\\rc\\upgrade_ope.cmd >> %programdata%\\ope\\tmp\\log\\upgrade.log 2>&1")
     
-    #ProcessManagement.run_detatched_cmd(long_running_cmd)
+    # ProcessManagement.run_detatched_cmd(long_running_cmd)
     ProcessManagement.run_process_as_user("cmd.exe", user_name="ray")
 
     p("exiting test.")
