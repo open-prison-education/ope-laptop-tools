@@ -14,7 +14,6 @@ from mgmt_Computer import Computer
 from mgmt_GroupPolicy import GroupPolicy
 from mgmt_ProcessManagement import ProcessManagement
 from mgmt_SystemTime import SystemTime
-from mgmt_LockScreen import LockScreen
 from mgmt_NetworkDevices import NetworkDevices
 
 
@@ -690,13 +689,6 @@ class CredentialProcess:
             p("}}rbError - Verify OPEService is running!\nStudent Account NOT unlocked!}}xx")
             return False
         
-        # Ensure the lock screen widget is cycled
-        # Note -t is ok if this fails, not worth killing "credential" process over
-        LockScreen.refresh_lock_screen_widget()
-        # if not LockScreen.refresh_lock_screen_widget():
-        #     p("}}rbError - Unable to cycle lock_screen_widget properly!\nStudent Account NOT unlocked!}}xx")
-        #     return False
-
         # Enable student account
         if laptop_network_type == "Standalone":
             if not UserAccounts.enable_account(student_user_name):
@@ -1015,9 +1007,6 @@ class CredentialProcess:
 
     @staticmethod
     def ping_smc(smc_url=None):
-        # Make sure the lock screen widget is running
-        LockScreen.show_lock_screen_widget()
-
         # See if we can bounce off the SMC server and get a response
         p_state("Starting ping_smc", state="none", title="Ping SMC", kill_logon=False)
         # Command that is run to start this function

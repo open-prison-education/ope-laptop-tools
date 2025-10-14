@@ -30,9 +30,6 @@ simplejson
 #servicemanager
 
 
-#lockscreen widget
-pyqt5
-
 # to build
 pyinstaller
 nuitka

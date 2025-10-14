@@ -15,8 +15,6 @@ Use Nuitka for all builds but OPEService. Nuitka doesn't work for services unles
 
 .\nuitka_mgmt_build.cmd (for mgmt)
 
-.\nuitka_lock_screen_widget_build.cmd (for lock screen widget)
-
 .\nuitka_sshot_build.cmd (for screenshot)
 
 python .\build_svc.py (for OPEService)
