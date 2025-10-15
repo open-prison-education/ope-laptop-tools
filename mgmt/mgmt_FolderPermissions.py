@@ -352,8 +352,6 @@ class FolderPermissions:
             os.makedirs(util.TMP_FOLDER, exist_ok=True)
         if not os.path.isdir(util.QML_CACHE_FOLDER):
             os.makedirs(util.QML_CACHE_FOLDER, exist_ok=True)
-        if not os.path.isdir(util.LOCK_SCREEN_WIDGET_FOLDER):
-            os.makedirs(util.LOCK_SCREEN_WIDGET_FOLDER, exist_ok=True)
         if not os.path.isdir(util.LOG_FOLDER):
             os.makedirs(util.LOG_FOLDER, exist_ok=True)
         if not os.path.isdir(util.SCREEN_SHOTS_FOLDER):
@@ -426,7 +424,6 @@ class FolderPermissions:
             os.path.join(util.LOG_FOLDER, "lms_app_debug.log"): ("a", "a", False),
             os.path.join(util.LOG_FOLDER, "upgrade.log"): ("r", "r", False),
             util.SCREEN_SHOTS_FOLDER: ("c", "c", False),
-            util.LOCK_SCREEN_WIDGET_FOLDER: ("r", "r", False),
             util.QML_CACHE_FOLDER: ("f", "c", False)
             
         }

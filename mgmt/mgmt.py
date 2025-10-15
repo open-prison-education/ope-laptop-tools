@@ -52,7 +52,6 @@ from mgmt_GroupPolicy import GroupPolicy
 from mgmt_ProcessManagement import ProcessManagement
 from mgmt_Computer import Computer
 from mgmt_COMPorts import COMPorts
-from mgmt_LockScreen import LockScreen
 
 
 # Get the logging level
@@ -348,14 +347,6 @@ valid_commands = {
     "lock_machine": {
         "function": CredentialProcess.lock_machine,
         "help": "Turn security features back on and re-enable student account."
-    },
-    "show_lock_screen_widget": {
-        "function": LockScreen.show_lock_screen_widget,
-        "help": "Launch the lock screen widget which shoes current state of syncing/updates/etc..."
-    },
-    "refresh_lock_screen_widget": {
-        "function": LockScreen.refresh_lock_screen_widget,
-        "help": "Update the lockscreen widget with the latest files and re-launch"
     },
 
 
