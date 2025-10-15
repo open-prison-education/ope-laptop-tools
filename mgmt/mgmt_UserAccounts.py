@@ -1052,6 +1052,39 @@ class UserAccounts:
         #     return False
 
         # return True
+
+    @staticmethod
+    def lock_screen_for_user(user_name=None):
+        # Command that is run to start this function
+        only_for = "lock_screen"
+
+        # Find the user in question and lock the workstation
+        if user_name is None:
+            user_name = util.get_param(2, None, only_for=only_for)
+        if user_name is None:
+            # Lock for the current user if no name
+            return UserAccounts.lock_screen_for_current_user()
+        
+
+        p("}}ybLocking screen for other users - Not Implemented Yet!}}xx")
+        # TODO - lock_workstation
+        # Lookup the user specified and run this under their account
+        # Have rundll run the lock workstation command
+        # WinApi.CreateProcessAsUser(
+        #   interactiveUserToken,
+        #   null,
+        #   "rundll32.exe user32.dll,LockWorkStation",
+        #   IntPtr.Zero,
+        #   IntPtr.Zero,
+        #   false,
+        #   (uint)WinApi.CreateProcessFlags.CREATE_NEW_CONSOLE |
+        #     (uint)WinApi.CreateProcessFlags.INHERIT_CALLER_PRIORITY,
+        #   IntPtr.Zero,
+        #   currentDirectory,
+        #   ref siInteractive,
+        #   out piInteractive);
+
+        return False
         
     
     @staticmethod
