@@ -420,7 +420,7 @@ class FolderPermissions:
             os.path.join(util.LOG_FOLDER, "ope-sshot.log"): ("a", "a", False),
             os.path.join(util.LOG_FOLDER, "ope-mgmt.log"): ("a", "a", False),
             os.path.join(util.LOG_FOLDER, "ope-lockscreen.log"): ("a", "a", False),
-            os.path.join(util.LOG_FOLDER, "ope-state.log"): ("r", "r", False),
+            os.path.join(util.LOG_FOLDER, "ope-state.log"): ("r", "rw", False),
             os.path.join(util.LOG_FOLDER, "lms_app_debug.log"): ("a", "a", False),
             os.path.join(util.LOG_FOLDER, "upgrade.log"): ("r", "r", False),
             util.SCREEN_SHOTS_FOLDER: ("c", "c", False),
