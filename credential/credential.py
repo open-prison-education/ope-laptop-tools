@@ -83,6 +83,9 @@ class CredentialConfig:
         p("}}ynInstall Service Script: }}cn" + str(self.config.get('install_service_script', '')) + "}}xx")
         p("}}gb=================================}}xx\n")
 
+        if self.config.get('testing_mode', False):
+            return True
+
         p("}}ynDo you want to continue? (y/n): }}xx ", False)
         userInput = input()
         userInput = userInput.lower().strip()
@@ -94,6 +97,7 @@ class CredentialConfig:
             return True
         else:
             return False
+
 
 
 class CredentialProcess:
@@ -131,11 +135,18 @@ class CredentialProcess:
         Returns:
             True on success, False on failure
         """
-        p("}}gnExecuting: " + cmd + "}}xx", log_level=4)
+        p("}}gnExecuting: " + cmd + "}}xx", log_level=3)
+        
+        # Set up environment and working directory for testing mode
+        cwd = None
+        if self.config.get('testing_mode', False):
+            project_root_path = os.path.normpath(os.path.join(self.script_dir, ".."))
+            cwd = project_root_path
+            p("}}gnWorking directory is set to: " + project_root_path + "}}xx", log_level=4)
+
         
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=False)
-            
+            result = subprocess.run(cmd, shell=True, capture_output=False, cwd=cwd)    
             if result.returncode != 0:
                 if error_msg:
                     p("}}rb" + error_msg + "}}xx", log_level=1)
@@ -181,16 +192,15 @@ class CredentialProcess:
     def run_config_once(self):
         """Run mgmt.exe config_once to setup initial configuration"""
         p("}}gb-- Running initial configuration...}}xx")
-        
-        services_path = self.config.get('services_path', 'Services')
-        mgmt_exe = os.path.join(self.script_dir, services_path, "mgmt", "mgmt.exe")
-        
-        if not os.path.exists(mgmt_exe):
+
+        mgmt_exe = self.get_mgmt_exe_path()
+
+        if not os.path.exists(mgmt_exe) and not self.config.get('testing_mode', False):
             p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
             return False
         
         return self.run_command(
-            f'"{mgmt_exe}" config_once',
+            f'{mgmt_exe} config_once',
             error_msg="ERROR: Failed to run config_once",
             critical=False
         )
@@ -212,8 +222,7 @@ class CredentialProcess:
         p("}}gb-- Unlocking Machine - please wait...}}xx")
         p("")
         
-        services_path = self.config.get('services_path', 'Services')
-        mgmt_exe = os.path.join(self.script_dir, services_path, "mgmt", "mgmt.exe")
+        mgmt_exe = self.get_mgmt_exe_path()
         
         return self.run_command(
             f'"{mgmt_exe}" unlock_machine',
@@ -242,8 +251,7 @@ class CredentialProcess:
         """Run the main credential process"""
         p("}}gb-- Starting credential process...}}xx")
         
-        # Use the installed version in programdata
-        mgmt_exe = os.path.expandvars("%programdata%\\ope\\Services\\mgmt\\mgmt.exe")
+        mgmt_exe = self.get_mgmt_exe_path()
         
         if not os.path.exists(mgmt_exe):
             p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
@@ -260,8 +268,7 @@ class CredentialProcess:
         """Lock machine down and enable student account"""
         p("}}gb-- Locking Machine...}}xx")
         
-        # Use the installed version in programdata
-        mgmt_exe = os.path.expandvars("%programdata%\\ope\\Services\\mgmt\\mgmt.exe")
+        mgmt_exe = self.get_mgmt_exe_path()
         
         return self.run_command(
             f'"{mgmt_exe}" lock_machine',
@@ -280,6 +287,14 @@ class CredentialProcess:
         time.sleep(10)
         
         input("Press Enter to exit...")
+
+    def get_mgmt_exe_path(self):
+        """Get the path to the mgmt.exe file"""
+        if self.config.get('testing_mode', False):
+            return "python -m mgmt.mgmt"
+        else:
+            services_path = os.path.join(self.script_dir, self.config.get('services_path', 'Services'))
+            return os.path.join(services_path, "mgmt", "mgmt.exe")
     
     def run(self):
         """Execute the complete credential process"""
