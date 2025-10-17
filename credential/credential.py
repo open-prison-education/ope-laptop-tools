@@ -74,13 +74,29 @@ class CredentialConfig:
         
         return True
     
+    def get_config(self):
+        """Get the configuration dictionary"""
+        return self.config
+
+
+
+
+
+class CredentialProcess:
+    """Main credential process orchestrator"""
+    
+    def __init__(self, config_dict):
+        self.config = config_dict
+        self.script_dir = os.path.dirname(os.path.abspath(__file__))
+    
     def print_summary_and_confirm(self):
-        """Print configuration summary"""
+        """Print configuration summary and get user confirmation"""
         p("\n}}gb=== Credential Configuration ===}}xx")
-        p("}}ynInstall VC Runtimes: }}cn" + str(self.config.get('install_vc_runtimes', False)) + "}}xx")
-        p("}}ynServices Path: }}cn" + str(self.config.get('services_path', '')) + "}}xx")
-        p("}}ynVC Runtimes Script: }}cn" + str(self.config.get('vc_runtimes_script', '')) + "}}xx")
-        p("}}ynInstall Service Script: }}cn" + str(self.config.get('install_service_script', '')) + "}}xx")
+        
+        # Dynamically print all config keys and values
+        for key, value in self.config.items():
+            p("}}yn" + key.replace('_', ' ').title() + ": }}cn" + str(value) + "}}xx")
+        
         p("}}gb=================================}}xx\n")
 
         if self.config.get('testing_mode', False):
@@ -97,15 +113,6 @@ class CredentialConfig:
             return True
         else:
             return False
-
-
-
-class CredentialProcess:
-    """Main credential process orchestrator"""
-    
-    def __init__(self, config):
-        self.config = config
-        self.script_dir = os.path.dirname(os.path.abspath(__file__))
     
     def check_admin_privileges(self):
         """Verify the script is running with admin/UAC privileges"""
@@ -303,7 +310,7 @@ class CredentialProcess:
             return EXIT_ERROR
         
         # Print configuration summary
-        if not self.config.print_summary_and_confirm():
+        if not self.print_summary_and_confirm():
             p("}}ynCredential process interrupted by user.}}xx")
             return EXIT_SUCCESS
         
@@ -335,15 +342,16 @@ def main():
     try:
         p("}}gb[ ---- Starting Credential Process ---- ]}}xx\n")
         # Load configuration
-        config = CredentialConfig()
-        if not config.load():
+        config_loader = CredentialConfig()
+        if not config_loader.load():
             sys.exit(EXIT_ERROR)
         
-        if not config.validate():
+        if not config_loader.validate():
             sys.exit(EXIT_ERROR)
         
-        # Run credential process
-        process = CredentialProcess(config)
+        # Get config dictionary and run credential process
+        config_dict = config_loader.get_config()
+        process = CredentialProcess(config_dict)
         exit_code = process.run()
         
         sys.exit(exit_code)
