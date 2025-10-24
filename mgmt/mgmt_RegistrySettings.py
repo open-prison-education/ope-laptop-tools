@@ -348,7 +348,7 @@ class RegistrySettings:
         try:
             laptop_approved_nics = config_dict.get("laptop_approved_nics", [])
             # Convert nic==ip format to a array of tuples
-            current_nics_json = RegistrySettings.get_reg_value(app="OPEService", value_name="laptop_approved_nics", default="[]")
+            current_nics_json = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default="[]")
             current_nics = json.loads(current_nics_json)
             
             for nic in laptop_approved_nics:
@@ -445,10 +445,7 @@ class RegistrySettings:
                 student_user = RegistrySettings.get_reg_value(value_name="student_user", default="")
 
             if laptop_admin_user == "":
-                laptop_admin_user = RegistrySettings.get_reg_value(app="OPEService", value_name="admin_user", default="administrator")
-            
-            if laptop_admin_user == "":
-                laptop_admin_user = None
+                laptop_admin_user = RegistrySettings.get_reg_value(app="OPEService", value_name="admin_user", default="admin")
             
             if student_user == "":
                 p("}}rnNo credentialed student set!}}xx")

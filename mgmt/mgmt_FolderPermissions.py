@@ -393,10 +393,10 @@ class FolderPermissions:
             f = open(os.path.join(util.LOG_FOLDER, "ope-state.log"), "w")
             f.close()
         
-        # ---- lms_app_debug.log ----
+        # ---- ope-lms.log ----
         # Make sure the log file exists so we can set permissions on it later
-        if not os.path.isfile(os.path.join(util.LOG_FOLDER, "lms_app_debug.log")):
-            f = open(os.path.join(util.LOG_FOLDER, "lms_app_debug.log"), "w")
+        if not os.path.isfile(os.path.join(util.LOG_FOLDER, "ope-lms.log")):
+            f = open(os.path.join(util.LOG_FOLDER, "ope-lms.log"), "w")
             f.close()
         
         # ---- upgrade.log ----
@@ -420,8 +420,8 @@ class FolderPermissions:
             os.path.join(util.LOG_FOLDER, "ope-sshot.log"): ("a", "a", False),
             os.path.join(util.LOG_FOLDER, "ope-mgmt.log"): ("a", "a", False),
             os.path.join(util.LOG_FOLDER, "ope-lockscreen.log"): ("a", "a", False),
-            os.path.join(util.LOG_FOLDER, "ope-state.log"): ("r", "rw", False),
-            os.path.join(util.LOG_FOLDER, "lms_app_debug.log"): ("a", "a", False),
+            os.path.join(util.LOG_FOLDER, "ope-state.log"): ("r", "r", False),
+            os.path.join(util.LOG_FOLDER, "ope-lms.log"): ("a", "rw", False),
             os.path.join(util.LOG_FOLDER, "upgrade.log"): ("r", "r", False),
             util.SCREEN_SHOTS_FOLDER: ("c", "c", False),
             util.QML_CACHE_FOLDER: ("f", "c", False)

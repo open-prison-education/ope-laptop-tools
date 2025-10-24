@@ -109,8 +109,8 @@ class CredentialProcess:
             value_type="REG_DWORD")
         
 
-
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
+        # TODO - Check if credential_config registry value is True
+        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
 
         p("\n}}gbOPE Management Utility - Version: " + mgmt_version + "}}xx")
 
@@ -171,7 +171,7 @@ class CredentialProcess:
 
         mgmt_version = CredentialProcess.get_mgmt_version()
 
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
+        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
         canvas_url = ""
         canvas_access_token = ""
         student_user = RegistrySettings.get_reg_value(value_name="student_user", default="")
@@ -444,7 +444,8 @@ class CredentialProcess:
             p("}}rbERROR - Unable to ensure folders are present and permissions are setup properly!}}xx")
             return False
 
-        CredentialProcess.trust_ope_certs()
+        # TODO: disable in testting/debugging mode
+        # CredentialProcess.trust_ope_certs()
 
         # Disable all student accounts
         UserAccounts.disable_student_accounts()
@@ -510,7 +511,7 @@ class CredentialProcess:
         # the sites
         p("}}gnGetting OPE Cert file...}}xx", log_level=3)
         # Get the smc_url - pull the ca.crt file from there
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
+        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
         
         app_path = os.path.dirname(os.path.abspath(__file__))
         rc_path = os.path.join(app_path, "rc")
