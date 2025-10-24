@@ -9,6 +9,7 @@ import json
 import subprocess
 import time
 import ctypes
+import getpass
 
 # Add parent directory to path so we can import common modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +18,10 @@ sys.path.insert(0, parent_dir)
 from common.color import p
 from common import util
 from mgmt.mgmt_EventLog import EventLog
+from mgmt.mgmt_RegistrySettings import RegistrySettings
+from mgmt.mgmt_RestClient import RestClient
+from mgmt.mgmt_SystemTime import SystemTime
+from mgmt.mgmt_NetworkDevices import NetworkDevices
 
 # Setup logging
 LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-credential.log'), service_name="OPECredential")
@@ -104,11 +109,11 @@ class CredentialProcess:
 
         p("}}ynDo you want to continue? (y/n): }}xx ", False)
         userInput = input()
-        userInput = userInput.lower().strip()
+        userInput = userInput.strip().lower()
         while userInput != "y" and userInput != "n":
             p("}}rbInvalid input " + userInput + " - please enter y or n: }}xx ", False)
             userInput = input()    
-            userInput = userInput.lower().strip()
+            userInput = userInput.strip().lower()
         if userInput == "y":
             return True
         else:
@@ -202,7 +207,7 @@ class CredentialProcess:
 
         mgmt_exe = self.get_mgmt_exe_path()
 
-        if not os.path.exists(mgmt_exe) and not self.config.get('testing_mode', False):
+        if not os.path.exists(mgmt_exe) and self.config.get('testing_mode', "off") == "off":
             p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
             return False
         
@@ -232,7 +237,7 @@ class CredentialProcess:
         mgmt_exe = self.get_mgmt_exe_path()
         
         return self.run_command(
-            f'"{mgmt_exe}" unlock_machine',
+            f'{mgmt_exe} unlock_machine',
             error_msg="*** ERROR - Failed to unlock machine - Quitting. ***",
             critical=True
         )
@@ -240,6 +245,10 @@ class CredentialProcess:
     def install_services(self):
         """Install OPE Services"""
         p("}}gb-- Installing OPE Services...}}xx")
+
+        if self.config.get('testing_mode', False):
+            p("}}gnSkipping service installation in testing mode.}}xx", log_level=3)
+            return True
         
         install_script = self.config.get('install_service_script', '')
         install_script_path = os.path.join(self.script_dir, install_script)
@@ -249,7 +258,7 @@ class CredentialProcess:
             return False
         
         return self.run_command(
-            f'call "{install_script_path}"',
+            f'call {install_script_path}',
             error_msg="****** ERROR - Failed to install OPE services. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******",
             critical=True
         )
@@ -260,13 +269,13 @@ class CredentialProcess:
         
         mgmt_exe = self.get_mgmt_exe_path()
         
-        if not os.path.exists(mgmt_exe):
+        if not os.path.exists(mgmt_exe) and not self.config.get('testing_mode', False):
             p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
             p("}}ybMake sure services were installed correctly.}}xx")
             return False
         
         return self.run_command(
-            f'"{mgmt_exe}" credential_laptop',
+            f'{mgmt_exe} credential_laptop',
             error_msg="****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******",
             critical=True
         )
@@ -278,7 +287,7 @@ class CredentialProcess:
         mgmt_exe = self.get_mgmt_exe_path()
         
         return self.run_command(
-            f'"{mgmt_exe}" lock_machine',
+            f'{mgmt_exe} lock_machine',
             error_msg="****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. Try mgmt lock_machine again to see if you can lock it manually. *******",
             critical=True
         )
@@ -303,33 +312,141 @@ class CredentialProcess:
             services_path = os.path.join(self.script_dir, self.config.get('services_path', 'Services'))
             return os.path.join(services_path, "mgmt", "mgmt.exe")
     
+    def store_config_in_registry(self):
+        """Store the configuration in the registry to be used by the credential_laptop function in mgmt module"""
+        p("}}gb-- Storing configuration in the registry...}}xx", log_level=3)
+
+        smc_url = self.config.get('smc_url', '')
+        smc_admin_user = self.config.get('smc_admin_username', '')
+        student_user = self.config.get('student_username', '')
+        debug = self.config.get('debug', "off")
+
+        RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_user, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
+
+        p("}}gb-- Configuration stored in the registry...}}xx", log_level=3)
+
+        return True
+
+    def validate_and_store_smc_config(self):
+        """Validate the SMC configuration"""
+        smc_url = self.config.get('smc_url', '')
+        if smc_url == "":
+            p("}}rbERROR: SMC URL is not set.}}xx", log_level=1)
+            return False
+        
+        smc_config = RestClient.get_smc_config(smc_url)
+        if smc_config is None:
+            p("}}rbERROR: Unable to get SMC configuration.}}xx", log_level=1)
+            return False
+        
+        p("}}gnSMC configuration: " + str(smc_config) + "}}xx", log_level=3)
+
+        RegistrySettings.store_smc_config(smc_config)
+        
+        return True
+
+    def configure_network_devices(self):
+        """Configure the network devices"""
+        p("}}gb-- Configuring network devices...}}xx", log_level=3)
+
+        approved_nics = RegistrySettings.get_reg_value(app="OPEService",
+                value_name="approved_nics", default="[]")
+
+        p("}}gnApproved NICs: " + str(approved_nics) + "}}xx", log_level=3)
+        
+        if approved_nics == []:
+            NetworkDevices.configure_nics()
+        
+        return True
+
+    def sync_time_with_ntp(self):
+        """Sync time with NTP servers"""
+        p("}}gb-- Syncing time with NTP servers...}}xx")
+        
+        SystemTime.sync_time_w_ntp()
+        
+        return True
+
+    def validate_and_store_student_account(self):
+        """Validate student account exists in SMC and get account details"""
+        p("}}gb-- Validating and storingstudent account...}}xx", log_level=3)
+        smc_url = self.config['smc_url']
+        smc_admin_username = self.config['smc_admin_username']
+        student_username = self.config['student_username']
+
+        if not all([smc_url, smc_admin_username, student_username]):
+            p("}}rbERROR: SMC URL, admin username, or student username is not set.}}xx", log_level=1)
+            return False
+
+        smc_admin_password = getpass.getpass(prompt=f"Enter SMC admin password:")
+        
+
+        result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
+        if result is None:
+            p("}}rbERROR: Unable to verify student account in SMC.}}xx", log_level=1)
+            return False
+
+        # Store the returned information in registry for later use
+        laptop_admin_user, student_full_name, smc_version, \
+        laptop_network_type, laptop_domain_name, laptop_domain_ou = result
+
+        # Store these values in registry
+        RegistrySettings.set_reg_value(value_name="laptop_admin_user", value=laptop_admin_user, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="student_full_name", value=student_full_name, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="smc_version", value=smc_version, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
+
+        p("}}gnStudent account validated and stored successfully}}xx", log_level=3)
+        return True
+        
+
     def run(self):
         """Execute the complete credential process"""
         # Check admin privileges
         if not self.check_admin_privileges():
             return EXIT_ERROR
-        
+
         # Print configuration summary
         if not self.print_summary_and_confirm():
             p("}}ynCredential process interrupted by user.}}xx")
             return EXIT_SUCCESS
+
+        # set the credential_config registry value to True
+        # used to pass prompting user input in mgmt module
+        RegistrySettings.set_reg_value(value_name="credential_config", value=True, value_type="REG_DWORD")
+
+        self.store_config_in_registry()
+        
+        initial_checks = (self.validate_and_store_smc_config, self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
+        for check in initial_checks:
+            if not check():
+                p("}}rbInitial check failed: " + check.__name__ + "}}xx", log_level=1)
+                RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
+                return EXIT_ERROR
         
         # Execute workflow steps
         steps = (
-            ("Installing VC Runtimes", self.install_vc_runtimes),
-            ("Running initial configuration", self.run_config_once),
-            ("Adding Defender exclusion", self.add_defender_exclusion),
             ("Unlocking machine", self.unlock_machine),
-            ("Installing services", self.install_services),
             ("Credentialing laptop", self.credential_laptop),
+            ("Installing VC Runtimes", self.install_vc_runtimes),
+            ("Adding Defender exclusion", self.add_defender_exclusion),
+            ("Installing services", self.install_services),
             ("Locking machine", self.lock_machine),
         )
         
-        for step_name, step_func in steps:
-            p("}}gnStep: " + step_name + "}}xx", log_level=3)
-            if not step_func():
-                p("}}rbStep failed: " + step_name + "}}xx", log_level=1)
-                return EXIT_ERROR
+        # for step_name, step_func in steps:
+        #     p("}}gnStep: " + step_name + "}}xx", log_level=3)
+        #     if not step_func():
+        #         p("}}rbStep failed: " + step_name + "}}xx", log_level=1)
+        #         return EXIT_ERROR
+
+        # unset the credential_config registry value
+        RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
         
         # Display completion
         self.display_completion()
