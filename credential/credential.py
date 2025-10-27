@@ -104,7 +104,7 @@ class CredentialProcess:
         
         p("}}gb=================================}}xx\n")
 
-        if self.config.get('testing_mode', False):
+        if self.config.get('debug', 'off').lower() == "on":
             return True
 
         p("}}ynDo you want to continue? (y/n): }}xx ", False)
@@ -151,7 +151,7 @@ class CredentialProcess:
         
         # Set up environment and working directory for testing mode
         cwd = None
-        if self.config.get('testing_mode', False):
+        if self.config.get('debug', 'off').lower() == "on":
             project_root_path = os.path.normpath(os.path.join(self.script_dir, ".."))
             cwd = project_root_path
             p("}}gnWorking directory is set to: " + project_root_path + "}}xx", log_level=4)
@@ -207,7 +207,7 @@ class CredentialProcess:
 
         mgmt_exe = self.get_mgmt_exe_path()
 
-        if not os.path.exists(mgmt_exe) and self.config.get('testing_mode', "off") == "off":
+        if not os.path.exists(mgmt_exe) and self.config.get('debug', 'off').lower() == 'off':
             p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
             return False
         
@@ -246,7 +246,7 @@ class CredentialProcess:
         """Install OPE Services"""
         p("}}gb-- Installing OPE Services...}}xx")
 
-        if self.config.get('testing_mode', False):
+        if self.config.get('debug', 'off').lower() == "on":
             p("}}gnSkipping service installation in testing mode.}}xx", log_level=3)
             return True
         
@@ -269,7 +269,7 @@ class CredentialProcess:
         
         mgmt_exe = self.get_mgmt_exe_path()
         
-        if not os.path.exists(mgmt_exe) and not self.config.get('testing_mode', False):
+        if not os.path.exists(mgmt_exe) and self.config.get('debug', 'off').lower() == "off":
             p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
             p("}}ybMake sure services were installed correctly.}}xx")
             return False
@@ -297,16 +297,10 @@ class CredentialProcess:
         p("")
         p("}}gb *** Credential Done *** }}xx")
         p("")
-        
-        # Slight pause like the batch script
-        p("}}gnWaiting 10 seconds before closing...}}xx", log_level=3)
-        time.sleep(10)
-        
-        input("Press Enter to exit...")
 
     def get_mgmt_exe_path(self):
         """Get the path to the mgmt.exe file"""
-        if self.config.get('testing_mode', False):
+        if self.config.get('debug', 'off').lower() == "on":
             return "python -m mgmt.mgmt"
         else:
             services_path = os.path.join(self.script_dir, self.config.get('services_path', 'Services'))
@@ -319,7 +313,7 @@ class CredentialProcess:
         smc_url = self.config.get('smc_url', '')
         smc_admin_user = self.config.get('smc_admin_username', '')
         student_user = self.config.get('student_username', '')
-        debug = self.config.get('debug', "off")
+        debug = self.config.get('debug', 'off')
 
         RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_user, value_type="REG_SZ")
@@ -372,7 +366,7 @@ class CredentialProcess:
 
     def validate_and_store_student_account(self):
         """Validate student account exists in SMC and get account details"""
-        p("}}gb-- Validating and storingstudent account...}}xx", log_level=3)
+        p("}}gb-- Validating and storing student account...}}xx", log_level=3)
         smc_url = self.config['smc_url']
         smc_admin_username = self.config['smc_admin_username']
         student_username = self.config['student_username']
