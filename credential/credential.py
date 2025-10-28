@@ -305,34 +305,6 @@ class CredentialProcess:
         else:
             services_path = os.path.join(self.script_dir, self.config.get('services_path', 'Services'))
             return os.path.join(services_path, "mgmt", "mgmt.exe")
-    
-    def store_smc_password(self, username, password):
-        """Store the SMC password in the credential vault"""
-        credential_data = {
-            "TargetName": f"SMC_{username}",
-            "Type": win32cred.CRED_TYPE_GENERIC,
-            "UserName": username,
-            "CredentialBlob": password,
-            "Persist": win32cred.CRED_PERSIST_LOCAL_MACHINE
-        }
-
-        try:
-            win32cred.CredWrite(credential_data, 0)
-            p("}}gnSMC admin password stored in the credential vault successfully}}xx", log_level=3)
-            return True
-        except Exception as ex:
-            p("}}rbERROR: Failed to store SMC admin password in the credential vault: " + str(ex) + "}}xx", log_level=1)
-            return False
-    
-    @staticmethod
-    def get_smc_password(username):
-        """Get the SMC password from the credential vault"""
-        try:
-            credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
-            return credential_data["CredentialBlob"].decode('utf-16')
-        except Exception as ex:
-            p("}}gnNo password found for SMC_" + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
-            return None
 
     def store_config_in_registry(self):
         """Store the configuration in the registry to be used by the credential_laptop function in mgmt module"""
@@ -403,10 +375,10 @@ class CredentialProcess:
             p("}}rbERROR: SMC URL, admin username, or student username is not set.}}xx", log_level=1)
             return False
 
-        smc_admin_password = self.get_smc_password(smc_admin_username)
+        smc_admin_password = util.get_smc_password(smc_admin_username)
         if smc_admin_password is None:
             smc_admin_password = getpass.getpass(prompt=f"Enter SMC admin password:")
-            self.store_smc_password(smc_admin_username, smc_admin_password)
+            util.store_smc_password(smc_admin_username, smc_admin_password)
         
         result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
         if result is None:

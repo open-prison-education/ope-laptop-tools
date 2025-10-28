@@ -1,6 +1,7 @@
 import sys
 import os
 from win32com.shell import shellcon, shell
+import win32cred
 
 # Should be programdata files folder
 ROOT_FOLDER = os.path.join(
@@ -93,6 +94,33 @@ def get_param(param_index=1, default_value="", only_for=None):
         ret = sys.argv[param_index]
     
     return ret
+
+def store_smc_password(username, password):
+    """Store the SMC password in the credential vault"""
+    credential_data = {
+        "TargetName": f"SMC_{username}",
+        "Type": win32cred.CRED_TYPE_GENERIC,
+        "UserName": username,
+        "CredentialBlob": password,
+        "Persist": win32cred.CRED_PERSIST_LOCAL_MACHINE
+    }
+
+    try:
+        win32cred.CredWrite(credential_data, 0)
+        p("}}gnSMC admin password stored in the credential vault successfully}}xx", log_level=3)
+        return True
+    except Exception as ex:
+        p("}}rbERROR: Failed to store SMC admin password in the credential vault: " + str(ex) + "}}xx", log_level=1)
+        return False
+
+def get_smc_password(username):
+    """Get the SMC password from the credential vault"""
+    try:
+        credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
+        return credential_data["CredentialBlob"].decode('utf-16')
+    except Exception as ex:
+        p("}}gnNo password found for SMC_" + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
+        return None
 
 def test_params():
 
