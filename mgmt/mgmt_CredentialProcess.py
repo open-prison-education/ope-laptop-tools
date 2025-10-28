@@ -169,6 +169,7 @@ class CredentialProcess:
         # student_full_name, laptop_admin_user, laptop_admin_password
         ret = []
 
+        credential_config = RegistrySettings.get_reg_value(value_name="credential_config", default=False)
         mgmt_version = CredentialProcess.get_mgmt_version()
 
         smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
@@ -177,7 +178,7 @@ class CredentialProcess:
         student_user = RegistrySettings.get_reg_value(value_name="student_user", default="")
         student_full_name = ""
         student_password = ""
-        smc_admin_user = RegistrySettings.get_reg_value(app="OPEService", value_name="smc_admin_user", default="admin")
+        smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="admin")
         smc_admin_password = ""
 
         laptop_admin_user = ""
@@ -201,73 +202,82 @@ class CredentialProcess:
 }}mn======================================================================}}xx
 
             """)
-
-            # 4 - Ask for input (smc server, login, student name, etc...)
-            p("}}ynEnter URL for SMC Server }}cn[enter for " + smc_url + "]:}}xx ", False)
-            tmp = input()
-            tmp = tmp.strip()
-            if tmp.lower() == "quit":
-                p("}}rnGot QUIT - exiting credential!}}xx")
-                return None
-            if tmp == "":
-                tmp = smc_url
-            smc_url = tmp
-            # Make sure url has https or http in it
-            if "https://" not in smc_url.lower() and "http://" not in smc_url.lower():
-                smc_url = "https://" + smc_url
-
-            p("}}ynPlease enter the ADMIN user name }}cn[enter for " + smc_admin_user + "]:}}xx ", False)
-            tmp = input()
-            tmp = tmp.strip()
-            if tmp.lower() == "quit":
-                p("}}rnGot QUIT - exiting credential!}}xx")
-                return None
-            if tmp == "":
-                tmp = smc_admin_user
-            smc_admin_user = tmp
-
-            p("}}ynPlease enter ADMIN password }}cn[characters will not show]:}}xx", False)
-            tmp = getpass.getpass(" ")
-            if tmp.lower() == "quit":
-                p("}}rnGot QUIT - exiting credential!}}xx")
-                return None
-            if tmp == "":
-                p("}}rbA password is required.}}xx")
-                continue
-            smc_admin_password = tmp
-
-            tmp = ""
-            last_student_user_prompt = ""
-            while tmp.strip() == "":
-                if student_user != "":
-                    last_student_user_prompt = " }}cn[enter for previous student " + student_user + "]"
-                    # p("}}mb\t- Found previously credentialed user: }}xx" + str(last_student_user))
-                p("}}ynPlease enter the username for the student" + last_student_user_prompt + ":}}xx ", False)
+            if not credential_config:
+                # Ask for input (smc server, login, student name, etc...)
+                p("}}ynEnter URL for SMC Server }}cn[enter for " + smc_url + "]:}}xx ", False)
                 tmp = input()
+                tmp = tmp.strip()
                 if tmp.lower() == "quit":
                     p("}}rnGot QUIT - exiting credential!}}xx")
                     return None
-                if tmp.strip() == "":
-                    tmp = student_user
-            student_user = tmp.strip()
+                if tmp == "":
+                    tmp = smc_url
+                smc_url = tmp
+                # Make sure url has https or http in it
+                if "https://" not in smc_url.lower() and "http://" not in smc_url.lower():
+                    smc_url = "https://" + smc_url
 
-            # - Bounce off SMC - verify_ope_account_in_smc
-            try:
-                result = RestClient.verify_ope_account_in_smc(student_user, smc_url, smc_admin_user, smc_admin_password)
-                if result is None:
-                    # Should show errors during the rest call, so none here
-                    #p("}}rbUnable to validate student against SMC!}}xx")
+                p("}}ynPlease enter the ADMIN user name }}cn[enter for " + smc_admin_user + "]:}}xx ", False)
+                tmp = input()
+                tmp = tmp.strip()
+                if tmp.lower() == "quit":
+                    p("}}rnGot QUIT - exiting credential!}}xx")
+                    return None
+                if tmp == "":
+                    tmp = smc_admin_user
+                smc_admin_user = tmp
+
+                p("}}ynPlease enter ADMIN password }}cn[characters will not show]:}}xx", False)
+                tmp = getpass.getpass(" ")
+                if tmp.lower() == "quit":
+                    p("}}rnGot QUIT - exiting credential!}}xx")
+                    return None
+                if tmp == "":
+                    p("}}rbA password is required.}}xx")
+                    continue
+                smc_admin_password = tmp
+
+                tmp = ""
+                last_student_user_prompt = ""
+                while tmp.strip() == "":
+                    if student_user != "":
+                        last_student_user_prompt = " }}cn[enter for previous student " + student_user + "]"
+                        # p("}}mb\t- Found previously credentialed user: }}xx" + str(last_student_user))
+                    p("}}ynPlease enter the username for the student" + last_student_user_prompt + ":}}xx ", False)
+                    tmp = input()
+                    if tmp.lower() == "quit":
+                        p("}}rnGot QUIT - exiting credential!}}xx")
+                        return None
+                    if tmp.strip() == "":
+                        tmp = student_user
+                student_user = tmp.strip()
+
+                # - Bounce off SMC - verify_ope_account_in_smc
+                try:
+                    result = RestClient.verify_ope_account_in_smc(student_user, smc_url, smc_admin_user, smc_admin_password)
+                    if result is None:
+                        # Should show errors during the rest call, so none here
+                        #p("}}rbUnable to validate student against SMC!}}xx")
+                        # Jump to top of loop and try again
+                        continue
+                        #return False # sys.exit(-1)
+                except Exception as ex:
+                    p("}}rbError - Unable to verify student in SMC}}xx\n" + str(ex))
                     # Jump to top of loop and try again
                     continue
-                    #return False # sys.exit(-1)
-            except Exception as ex:
-                p("}}rbError - Unable to verify student in SMC}}xx\n" + str(ex))
-                # Jump to top of loop and try again
-                continue
             
-            # If not None - result will be a tuple of information
-            laptop_admin_user, student_full_name, smc_version, \
-            laptop_network_type, laptop_domain_name, laptop_domain_ou = result
+                # If not None - result will be a tuple of information
+                laptop_admin_user, student_full_name, smc_version, \
+                laptop_network_type, laptop_domain_name, laptop_domain_ou = result
+            else:
+                laptop_admin_user = RegistrySettings.get_reg_value(value_name="laptop_admin_user", default="")
+                student_full_name = RegistrySettings.get_reg_value(value_name="student_full_name", default="")
+                smc_version = RegistrySettings.get_reg_value(value_name="smc_version", default="")
+                laptop_network_type = RegistrySettings.get_reg_value(value_name="laptop_network_type", default="")
+                laptop_domain_name = RegistrySettings.get_reg_value(value_name="laptop_domain_name", default="")
+                laptop_domain_ou = RegistrySettings.get_reg_value(value_name="laptop_domain_ou", default="")
+                smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="")
+                smc_admin_password = util.get_smc_password(smc_admin_user)
 
             ad_info = laptop_network_type
             ad_note = ""
@@ -334,16 +344,17 @@ class CredentialProcess:
                 str(CredentialProcess.COMPUTER_INFO['disk_boot_drive_serial_number']).ljust(col_size))
             txt = txt.replace("<ad_note>", ad_note)
 
-            p(txt)
-            p("}}ybPress Y to continue: }}xx", False)
-            tmp = input()
-            tmp = tmp.strip().lower()
-            if tmp != "y":
-                p("}}cnCanceled - trying again....}}xx")
-                continue
+            if not credential_config:
+                p(txt)
+                p("}}ybPress Y to continue: }}xx", False)
+                tmp = input()
+                tmp = tmp.strip().lower()
+                if tmp != "y":
+                    p("}}cnCanceled - trying again....}}xx")
+                    continue
 
-            # Show the warning regarding locking down the boot options
-            p("""
+                # Show the warning regarding locking down the boot options
+                p("""
 }}mn======================================================================
 }}mn| }}rb====================       WARNING!!!         ==================== }}mn|
 }}mn| }}xxEnsure that the boot from USB or boot from SD card options in      }}mn|
@@ -351,12 +362,12 @@ class CredentialProcess:
 }}mn| }}xxstrong random password.                                            }}mn|
 }}mn======================================================================}}xx
             """)
-            p("}}ybHave you locked down the BIOS? Press Y to continue: }}xx", False)
-            tmp = input()
-            tmp = tmp.strip().lower()
-            if tmp != "y":
-                p("}}cnCanceled - trying again....}}xx")
-                continue
+                p("}}ybHave you locked down the BIOS? Press Y to continue: }}xx", False)
+                tmp = input()
+                tmp = tmp.strip().lower()
+                if tmp != "y":
+                    p("}}cnCanceled - trying again....}}xx")
+                    continue
 
             # - Bounce off SMC - lms/credential_student.json/??
             result = None

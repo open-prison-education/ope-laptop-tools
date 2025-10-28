@@ -435,11 +435,11 @@ class CredentialProcess:
             ("Locking machine", self.lock_machine),
         )
         
-        # for step_name, step_func in steps:
-        #     p("}}gnStep: " + step_name + "}}xx", log_level=3)
-        #     if not step_func():
-        #         p("}}rbStep failed: " + step_name + "}}xx", log_level=1)
-        #         return EXIT_ERROR
+        for step_name, step_func in steps:
+            p("}}gnStep: " + step_name + "}}xx", log_level=3)
+            if not step_func():
+                p("}}rbStep failed: " + step_name + "}}xx", log_level=1)
+                return EXIT_ERROR
 
         # unset the credential_config registry value
         RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
