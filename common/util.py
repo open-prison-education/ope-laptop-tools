@@ -107,10 +107,8 @@ def store_smc_password(username, password):
 
     try:
         win32cred.CredWrite(credential_data, 0)
-        p("}}gnSMC admin password stored in the credential vault successfully}}xx", log_level=3)
         return True
     except Exception as ex:
-        p("}}rbERROR: Failed to store SMC admin password in the credential vault: " + str(ex) + "}}xx", log_level=1)
         return False
 
 def get_smc_password(username):
@@ -119,7 +117,6 @@ def get_smc_password(username):
         credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
         return credential_data["CredentialBlob"].decode('utf-16')
     except Exception as ex:
-        p("}}gnNo password found for SMC_" + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
         return None
 
 def test_params():
