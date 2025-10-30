@@ -7,11 +7,10 @@ import os
 import sys
 import json
 import subprocess
-import win32cred
 import ctypes
 import getpass
 
-# Add parent directory to path so we can import common modules
+# Add parent directory to path so we can import common and mgmt modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, parent_dir)
 
@@ -75,11 +74,15 @@ class CredentialConfig:
     
     def validate(self):
         """Validate required configuration settings"""
-        required_keys = ['install_vc_runtimes', 'services_path', 'vc_runtimes_script', 'install_service_script']
+        required_keys = ['install_vc_runtimes', 'have_you_locked_down_the_bios', 'services_path', 'vc_runtimes_script', 'install_service_script']
         
         for key in required_keys:
             if key not in self.config:
                 p("}}rbERROR: Missing required configuration key: " + key + "}}xx", log_level=1)
+                p("}}rbThe following keys are required:")
+                for key in required_keys:
+                    p("}}yn" + key.replace('_', ' ').title() + "}}xx", log_level=1)
+                p("}}rbPlease edit the credential_config.json file and try again.}}xx", log_level=1)
                 return False
         
         return True
@@ -177,7 +180,7 @@ class CredentialProcess:
                 
                 if critical:
                     p("\n}}rbCritical error - exiting credential process.}}xx", log_level=1)
-                    os._exit(EXIT_CRITICAL)
+                    sys.exit(EXIT_CRITICAL)
                 
                 return False
             
@@ -411,22 +414,38 @@ class CredentialProcess:
 
         p("}}gnStudent account validated and stored successfully}}xx", log_level=3)
         return True
-        
 
+    def validate_config_settings(self):
+        """Validate the configuration settings"""
+        p("}}gb-- Validating configuration settings...}}xx", log_level=3)
+
+        if not isinstance(self.config['install_vc_runtimes'], bool) or not isinstance(self.config['have_you_locked_down_the_bios'], bool):
+            p("}}rbERROR: install_vc_runtimes and have_you_locked_down_the_bios must be a boolean value (true or false).}}xx", log_level=1)
+            return False
+
+        if not self.config['have_you_locked_down_the_bios']:
+            p("}}rbERROR: Have you locked down the BIOS? if yes, set have_you_locked_down_the_bios to true in the credential_config.json file and try again.    }}xx", log_level=1)
+            return False
+
+        # Use isinstance to check types more robustly and avoid key errors with get()
+        string_keys = [
+            'smc_url', 'smc_admin_username', 'student_username',
+            'services_path', 'vc_runtimes_script', 'install_service_script'
+        ]
+        for key in string_keys:
+            value = self.config.get(key)
+            if not isinstance(value, str):
+                p("}}rbERROR: " + key + "must be a string value (check credential_config.json).}}xx", log_level=1)
+                return False
+
+        p("}}gnConfiguration settings validated successfully}}xx", log_level=3)
+        return True
+        
     def run(self):
         """Execute the complete credential process"""
         # Check admin privileges
-        if not self.check_admin_privileges():
+        if not self.check_admin_privileges() or not self.validate_config_settings() or not self.print_summary_and_confirm():
             return EXIT_ERROR
-
-        # Print configuration summary
-        if not self.print_summary_and_confirm():
-            p("}}ynCredential process interrupted by user.}}xx")
-            return EXIT_SUCCESS
-
-        # set the credential_config registry value to True
-        # used to pass prompting user input in mgmt module
-        RegistrySettings.set_reg_value(value_name="credential_config", value=True, value_type="REG_DWORD")
 
         self.store_config_in_registry()
         
@@ -452,9 +471,6 @@ class CredentialProcess:
             if not step_func():
                 p("}}rbStep failed: " + step_name + "}}xx", log_level=1)
                 return EXIT_ERROR
-
-        # unset the credential_config registry value
-        RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
         
         # Display completion
         self.display_completion()
@@ -465,17 +481,14 @@ class CredentialProcess:
 def main():
     """Main entry point"""
     try:
-        p("}}gb[ ---- Starting Credential Process ---- ]}}xx\n")
-        # Load configuration
+        RegistrySettings.set_reg_value(value_name="credential_config", value=True, value_type="REG_DWORD")
+
         config_loader = CredentialConfig()
-        if not config_loader.load():
+        if not config_loader.load() or not config_loader.validate():
             sys.exit(EXIT_ERROR)
-        
-        if not config_loader.validate():
-            sys.exit(EXIT_ERROR)
-        
-        # Get config dictionary and run credential process
+
         config_dict = config_loader.get_config()
+
         process = CredentialProcess(config_dict)
         exit_code = process.run()
         
@@ -483,14 +496,15 @@ def main():
         
     except KeyboardInterrupt:
         p("\n}}ynCredential process interrupted by user.}}xx")
-        # unset the credential_config registry value
-        RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
         sys.exit(EXIT_ERROR)
     except Exception as ex:
         p("}}rbFATAL ERROR: " + str(ex) + "}}xx", log_level=1)
         import traceback
         traceback.print_exc()
         sys.exit(EXIT_ERROR)
+    finally:
+        # unset the credential_config registry value
+        RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
 
 
 if __name__ == "__main__":
