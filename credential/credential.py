@@ -37,7 +37,12 @@ class CredentialConfig:
     
     def __init__(self, config_path=None):
         if config_path is None:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
+            if getattr(sys, 'frozen', False):
+                # Running as a bundled executable
+                script_dir = os.path.dirname(sys.executable)
+            else:
+                # Running as a normal Python script
+                script_dir = os.path.dirname(os.path.abspath(__file__))
             config_path = os.path.join(script_dir, "credential_config.json")
         
         self.config_path = config_path
@@ -92,7 +97,12 @@ class CredentialProcess:
     
     def __init__(self, config_dict):
         self.config = config_dict
-        self.script_dir = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            # Running as a bundled executable
+            self.script_dir = os.path.dirname(sys.executable)
+        else:
+            # Running as a normal Python script
+            self.script_dir = os.path.dirname(os.path.abspath(__file__))
     
     def print_summary_and_confirm(self):
         """Print configuration summary and get user confirmation"""
@@ -303,7 +313,9 @@ class CredentialProcess:
         if self.config.get('debug', 'off').lower() == "on":
             return "python -m mgmt.mgmt"
         else:
-            services_path = os.path.join(self.script_dir, self.config.get('services_path', 'Services'))
+            # When frozen (bundled as an executable), script_dir is the exe's directory. The Services directory is one level above.
+            base_path = os.path.abspath(os.path.join(self.script_dir, ".."))
+            services_path = os.path.join(base_path, self.config.get('services_path', 'Services'))
             return os.path.join(services_path, "mgmt", "mgmt.exe")
 
     def store_config_in_registry(self):
@@ -471,6 +483,8 @@ def main():
         
     except KeyboardInterrupt:
         p("\n}}ynCredential process interrupted by user.}}xx")
+        # unset the credential_config registry value
+        RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
         sys.exit(EXIT_ERROR)
     except Exception as ex:
         p("}}rbFATAL ERROR: " + str(ex) + "}}xx", log_level=1)
