@@ -1031,7 +1031,7 @@ class CredentialProcess:
             smc_url = util.get_param(2, None, only_for=only_for)
         if smc_url is None:
             # Nothing on command line? Get from registry
-            smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
+            smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu")
 
         if not force is True and not RegistrySettings.is_timer_expired(timer_name="ping_smc_timer", time_span=15):
             p("}}gnNot time to ping smc, skipping...}}xx", log_level=5)
@@ -1067,7 +1067,7 @@ class CredentialProcess:
         CredentialProcess.sync_student_password()
 
         # Have the OPE_LMS app sync (assignments, course work)
-        CredentialProcess.sync_lms_app_data()
+        # CredentialProcess.sync_lms_app_data()
 
         # Dropbox like sync - copy files back/forth between laptop/desktop home dir
         CredentialProcess.sync_work_folder()
