@@ -393,7 +393,8 @@ class CredentialProcess:
         smc_admin_password = util.get_smc_password(smc_admin_username)
         if smc_admin_password is None:
             smc_admin_password = getpass.getpass(prompt=f"Enter SMC admin password:")
-            util.store_smc_password(smc_admin_username, smc_admin_password)
+            if not util.store_smc_password(smc_admin_username, smc_admin_password):
+                return False
         
         result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
         if result is None:

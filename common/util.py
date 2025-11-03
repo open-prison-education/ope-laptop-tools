@@ -121,7 +121,7 @@ def get_smc_password(username):
     
     try:
         credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
-        return credential_data["CredentialBlob"].decode('utf-16')
+        return credential_data["CredentialBlob"].decode('utf-16le')
     except Exception as ex:
         p("}}ynNo password found for SMC_" + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
         return None
