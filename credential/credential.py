@@ -479,6 +479,17 @@ class CredentialProcess:
         return EXIT_SUCCESS
 
 
+def pause_before_exit():
+    """Pause before exiting if running as a frozen executable (packaged as exe)"""
+    if getattr(sys, 'frozen', False):
+        # Running as a bundled executable
+        p("\n}}ynPress Enter to exit...}}xx", False)
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+
 def main():
     """Main entry point"""
     try:
@@ -506,6 +517,8 @@ def main():
     finally:
         # unset the credential_config registry value
         RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
+        # Pause before exiting if running as a frozen executable (packaged as exe)
+        pause_before_exit()
 
 
 if __name__ == "__main__":
