@@ -13,6 +13,8 @@
 ### mgmt modules:
 - Refactored credential process handling
 - Minor updates to folder permissions, registry settings, and system time modules
+### Lock Screen Widget
+- Removed lock screen widget
 
 ## 25.8.25
 ### credential script:
