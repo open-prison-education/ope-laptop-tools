@@ -362,12 +362,13 @@ class CredentialProcess:
         p("}}gb-- Configuring network devices...}}xx", log_level=3)
 
         approved_nics = RegistrySettings.get_reg_value(app="OPEService",
-                value_name="approved_nics", default="[]")
-
-        p("}}gnApproved NICs: " + str(approved_nics) + "}}xx", log_level=3)
+                value_name="approved_nics", default=None)
         
-        if approved_nics == []:
+        if approved_nics is None or approved_nics == "[]":
+            p("}}gnNo approved NICs found, configuring nics...}}xx", log_level=3)
             NetworkDevices.configure_nics()
+        else:
+            p("}}gnApproved NICs: " + approved_nics + "}}xx", log_level=3)
         
         return True
 
@@ -386,9 +387,17 @@ class CredentialProcess:
         smc_admin_username = self.config['smc_admin_username']
         student_username = self.config['student_username']
 
-        if not all([smc_url, smc_admin_username, student_username]):
-            p("}}rbERROR: SMC URL, admin username, or student username is not set.}}xx", log_level=1)
+        if not all([smc_url, smc_admin_username]):
+            p("}}rbERROR: SMC URL, or admin username is not set.}}xx", log_level=1)
             return False
+
+        if not student_username:
+            p("}}cnStudent username not set, please enter it now:}}xx", log_level=1)
+            student_username = input()
+            if not student_username:
+                p("}}rbERROR: Student username is not set.}}xx", log_level=1)
+                return False
+            self.config['student_username'] = student_username
 
         smc_admin_password = util.get_smc_password(smc_admin_username)
         if smc_admin_password is None:

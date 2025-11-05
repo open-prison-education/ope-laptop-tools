@@ -89,7 +89,7 @@ This file contains all the settings for the credentialing process. Below is a de
 
 -   **Description**: The username of the student whose account will be set up on the laptop.
 -   **Acceptable Values**: A valid student username string.
--   **Required**: Yes
+-   **Required**: No (if not set, you will be prompted to enter it at run time).
 
 ---
 
