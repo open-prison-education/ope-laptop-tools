@@ -206,7 +206,7 @@ class RestClient:
         laptop_domain_name = ""
         laptop_domain_ou = ""
         
-        p("\n}}gnChecking user status in SMC tool...}}xx")
+        p("}}gnChecking user status in SMC tool...}}xx")
         
         json_response = RestClient.send_rest_call(server=smc_url,
             api_endpoint="lms/verify_ope_account_in_smc.json/" + student_user,
