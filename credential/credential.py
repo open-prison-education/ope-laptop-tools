@@ -23,7 +23,9 @@ from mgmt.mgmt_SystemTime import SystemTime
 from mgmt.mgmt_NetworkDevices import NetworkDevices
 
 # Setup logging
-LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-credential.log'), service_name="OPECredential")
+lf = os.path.join(util.LOG_FOLDER, 'ope-credential.log')
+os.makedirs(os.path.dirname(lf), exist_ok=True)
+LOGGER = EventLog(lf, service_name="OPECredential")
 
 # Exit codes
 EXIT_SUCCESS = 0
@@ -49,7 +51,7 @@ class CredentialConfig:
         
     def load(self):
         """Load configuration from JSON file"""
-        p("}}gnLoading configuration from: " + self.config_path + "}}xx", log_level=3)
+        p("}}gnLoading configuration from: " + self.config_path + "}}xx")
         
         if not os.path.exists(self.config_path):
             p("}}rbERROR: Configuration file not found: " + self.config_path + "}}xx", log_level=1)
@@ -59,7 +61,7 @@ class CredentialConfig:
         try:
             with open(self.config_path, 'r') as f:
                 self.config = json.load(f)
-            p("}}gnConfiguration loaded successfully.}}xx", log_level=3)
+            p("}}gnConfiguration loaded successfully.}}xx")
             return True
         except json.JSONDecodeError as ex:
             p("}}rbERROR: Invalid JSON in configuration file: " + str(ex) + "}}xx", log_level=1)
@@ -105,11 +107,11 @@ class CredentialProcess:
             self.script_dir = os.path.dirname(sys.executable)
         else:
             # Running as a normal Python script
-            self.script_dir = os.path.dirname(os.path.abspath(__file__))
+            self.script_dir = os.path.dirname(__file__)
     
     def print_summary_and_confirm(self):
         """Print configuration summary and get user confirmation"""
-        p("\n}}gb=== Credential Configuration ===}}xx")
+        p("}}gb=== Credential Configuration ===}}xx")
         
         # Dynamically print all config keys and values
         for key, value in self.config.items():
@@ -124,7 +126,7 @@ class CredentialProcess:
         userInput = input()
         userInput = userInput.strip().lower()
         while userInput != "y" and userInput != "n":
-            p("}}rbInvalid input " + userInput + " - please enter y or n: }}xx ", False)
+            p("}}rbInvalid input " + userInput + " - please enter y or n: }}xx ", end=False, log_level=1)
             userInput = input()    
             userInput = userInput.strip().lower()
         if userInput == "y":
@@ -142,7 +144,7 @@ class CredentialProcess:
                 p("}}ybPlease right-click and select 'Run as Administrator'}}xx")
                 return False
             
-            p("}}gnRunning with Administrator privileges.}}xx", log_level=3)
+            p("}}gnRunning with Administrator privileges.}}xx")
             return True
         except Exception as ex:
             p("}}rbERROR: Failed to check admin privileges: " + str(ex) + "}}xx", log_level=1)
@@ -160,7 +162,7 @@ class CredentialProcess:
         Returns:
             True on success, False on failure
         """
-        p("}}gnExecuting: " + cmd + "}}xx", log_level=3)
+        p("}}gnExecuting: " + cmd + "}}xx")
         
         # Set up environment and working directory for testing mode
         cwd = None
@@ -195,22 +197,21 @@ class CredentialProcess:
     def install_vc_runtimes(self):
         """Optionally install VC runtime packages"""
         if not self.config.get('install_vc_runtimes', False):
-            p("}}ynSkipping VC Runtimes installation (disabled in config).}}xx", log_level=3)
+            p("}}ynSkipping VC Runtimes installation (disabled in config).}}xx")
             return True
         
         p("}}gb-- Installing VC Runtimes...}}xx")
         
         vc_script = self.config.get('vc_runtimes_script', '')
-        vc_script_path = os.path.join(self.script_dir, vc_script)
+        vc_script_path = os.path.join(self.get_base_path(), self.resolve_path(vc_script))
         
         if not os.path.exists(vc_script_path):
-            p("}}rbWARNING: VC Runtimes script not found: " + vc_script_path + "}}xx", log_level=2)
-            p("}}ynContinuing without VC Runtimes installation...}}xx")
-            return True
+            p("}}rbError: VC Runtimes script not found: " + vc_script_path + "}}xx", log_level=1)
+            return False
         
         return self.run_command(
             f'call "{vc_script_path}"',
-            error_msg="WARNING: VC Runtimes installation failed, but continuing...",
+            error_msg="Error: VC Runtimes installation failed",
             critical=False
         )
     
@@ -260,11 +261,11 @@ class CredentialProcess:
         p("}}gb-- Installing OPE Services...}}xx")
 
         if self.config.get('debug', 'off').lower() == "on":
-            p("}}gnSkipping service installation in testing mode.}}xx", log_level=3)
+            p("}}gnSkipping service installation in testing mode.}}xx")
             return True
         
         install_script = self.config.get('install_service_script', '')
-        install_script_path = os.path.join(self.script_dir, install_script)
+        install_script_path = self.resolve_path(install_script)
         
         if not os.path.exists(install_script_path):
             p("}}rbERROR: Install service script not found: " + install_script_path + "}}xx", log_level=1)
@@ -317,13 +318,12 @@ class CredentialProcess:
             return "python -m mgmt.mgmt"
         else:
             # When frozen (bundled as an executable), script_dir is the exe's directory. The Services directory is one level above.
-            base_path = os.path.abspath(os.path.join(self.script_dir, ".."))
-            services_path = os.path.join(base_path, self.config.get('services_path', 'Services'))
+            services_path = os.path.join(self.get_base_path(), self.config.get('services_path', 'Services'))
             return os.path.join(services_path, "mgmt", "mgmt.exe")
 
     def store_config_in_registry(self):
         """Store the configuration in the registry to be used by the credential_laptop function in mgmt module"""
-        p("}}gb-- Storing configuration in the registry...}}xx", log_level=3)
+        p("}}gb-- Storing configuration in the registry...}}xx")
 
         smc_url = self.config.get('smc_url', '')
         smc_admin_user = self.config.get('smc_admin_username', '')
@@ -335,7 +335,7 @@ class CredentialProcess:
         RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
 
-        p("}}gb-- Configuration stored in the registry...}}xx", log_level=3)
+        p("}}gb-- Configuration stored in the registry...}}xx")
 
         return True
 
@@ -351,7 +351,7 @@ class CredentialProcess:
             p("}}rbERROR: Unable to get SMC configuration.}}xx", log_level=1)
             return False
         
-        p("}}gnSMC configuration: " + str(smc_config) + "}}xx", log_level=3)
+        p("}}gnSMC configuration: " + str(smc_config) + "}}xx")
 
         RegistrySettings.store_smc_config(smc_config)
         
@@ -359,16 +359,16 @@ class CredentialProcess:
 
     def configure_network_devices(self):
         """Configure the network devices"""
-        p("}}gb-- Configuring network devices...}}xx", log_level=3)
+        p("}}gb-- Configuring network devices...}}xx")
 
         approved_nics = RegistrySettings.get_reg_value(app="OPEService",
                 value_name="approved_nics", default=None)
         
         if approved_nics is None or approved_nics == "[]":
-            p("}}gnNo approved NICs found, configuring nics...}}xx", log_level=3)
+            p("}}gnNo approved NICs found, configuring nics...}}xx")
             NetworkDevices.configure_nics()
         else:
-            p("}}gnApproved NICs: " + approved_nics + "}}xx", log_level=3)
+            p("}}gnApproved NICs: " + approved_nics + "}}xx")
         
         return True
 
@@ -382,7 +382,7 @@ class CredentialProcess:
 
     def validate_and_store_student_account(self):
         """Validate student account exists in SMC and get account details"""
-        p("}}gb-- Validating and storing student account...}}xx", log_level=3)
+        p("}}gb-- Validating and storing student account...}}xx")
         smc_url = self.config['smc_url']
         smc_admin_username = self.config['smc_admin_username']
         student_username = self.config['student_username']
@@ -392,7 +392,7 @@ class CredentialProcess:
             return False
 
         if not student_username:
-            p("}}cnStudent username not set, please enter it now:}}xx", log_level=1)
+            p("}}cnStudent username not set, please enter it now:}}xx")
             student_username = input()
             if not student_username:
                 p("}}rbERROR: Student username is not set.}}xx", log_level=1)
@@ -422,12 +422,12 @@ class CredentialProcess:
         RegistrySettings.set_reg_value(value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
 
-        p("}}gnStudent account validated and stored successfully}}xx", log_level=3)
+        p("}}gnStudent account validated and stored successfully}}xx")
         return True
 
     def validate_config_settings(self):
         """Validate the configuration settings"""
-        p("}}gb-- Validating configuration settings...}}xx", log_level=3)
+        p("}}gb-- Validating configuration settings...}}xx")
 
         if not isinstance(self.config['install_vc_runtimes'], bool) or not isinstance(self.config['have_you_locked_down_the_bios'], bool):
             p("}}rbERROR: install_vc_runtimes and have_you_locked_down_the_bios must be a boolean value (true or false).}}xx", log_level=1)
@@ -448,7 +448,7 @@ class CredentialProcess:
                 p("}}rbERROR: " + key + "must be a string value (check credential_config.json).}}xx", log_level=1)
                 return False
 
-        p("}}gnConfiguration settings validated successfully}}xx", log_level=3)
+        p("}}gnConfiguration settings validated successfully}}xx")
         return True
         
     def run(self):
@@ -477,7 +477,7 @@ class CredentialProcess:
         )
         
         for step_name, step_func in steps:
-            p("}}gnStep: " + step_name + "}}xx", log_level=3)
+            p("}}gnStep: " + step_name + "}}xx")
             if not step_func():
                 p("}}rbStep failed: " + step_name + "}}xx", log_level=1)
                 return EXIT_ERROR
@@ -487,16 +487,29 @@ class CredentialProcess:
         
         return EXIT_SUCCESS
 
+    def pause_before_exit(self):
+        """Pause before exiting if running as a frozen executable (packaged as exe)"""
+        if getattr(sys, 'frozen', False):
+            # Running as a bundled executable
+            p("\n}}ynPress Enter to exit...}}xx", False)
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
+    
+    def get_base_path(self):
+        """Get the base path of the project root directory
+        which is a level above the script directory"""
+        return os.path.normpath(os.path.join(self.script_dir, ".."))
 
-def pause_before_exit():
-    """Pause before exiting if running as a frozen executable (packaged as exe)"""
-    if getattr(sys, 'frozen', False):
-        # Running as a bundled executable
-        p("\n}}ynPress Enter to exit...}}xx", False)
-        try:
-            input()
-        except (EOFError, KeyboardInterrupt):
-            pass
+    def resolve_path(self, path_str):
+        """split path string based on forward slash or backslash and join to use correct OS separator"""
+        if "/" in path_str or "\\" in path_str:
+            parts = path_str.replace("\\", "/").split("/")
+            return os.path.join(self.get_base_path(), *parts)
+        else:
+            return os.path.join(self.get_base_path(), path_str)
+
 
 
 def main():
@@ -527,7 +540,7 @@ def main():
         # unset the credential_config registry value
         RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
         # Pause before exiting if running as a frozen executable (packaged as exe)
-        pause_before_exit()
+        process.pause_before_exit()
 
 
 if __name__ == "__main__":
