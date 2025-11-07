@@ -361,6 +361,11 @@ class CredentialProcess:
         """Configure the network devices"""
         p("}}gb-- Configuring network devices...}}xx")
 
+        if self.config["approved_nics"] != "" and self.config["approved_nics"] != "[]":
+            p("}}gnStoring approved NICs provided in config: " + self.config["approved_nics"] + "}}xx")
+            RegistrySettings.set_reg_value(app="OPEService", value_name="approved_nics", value=self.config["approved_nics"], value_type="REG_SZ")
+            return True
+
         approved_nics = RegistrySettings.get_reg_value(app="OPEService",
                 value_name="approved_nics", default=None)
         
@@ -446,6 +451,24 @@ class CredentialProcess:
             value = self.config.get(key)
             if not isinstance(value, str):
                 p("}}rbERROR: " + key + "must be a string value (check credential_config.json).}}xx", log_level=1)
+                return False
+
+        approved_nics_str = self.config.get('approved_nics', '')
+        if approved_nics_str != "" and approved_nics_str != "[]":
+            try:
+                approved_nics = json.loads(approved_nics_str)
+                # approved_nics must be a list of lists, each with [nic_name, subnet]
+                if (
+                    not isinstance(approved_nics, list) or
+                    len(approved_nics) == 0 or
+                    not all(isinstance(item, list) and len(item) == 2 and
+                            all(isinstance(x, str) for x in item)
+                            for item in approved_nics)
+                ):
+                    p("}}rbERROR: 'approved_nics' must be a JSON-encoded list of [[\"nic_name #1\", \"subnet #1\"], [\"nic_name #2\", \"subnet #2\"]]. Check credential_config.json.}}xx", log_level=1)
+                    return False
+            except Exception as ex:
+                p("}}rbERROR: 'approved_nics' must be a valid JSON string like [[\"nic_name #1\", \"subnet #1\"], [\"nic_name #2\", \"subnet #2\"]]. Exception: " + str(ex) + "}}xx", log_level=1)
                 return False
 
         p("}}gnConfiguration settings validated successfully}}xx")
