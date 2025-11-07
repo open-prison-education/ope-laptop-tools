@@ -361,16 +361,18 @@ class CredentialProcess:
         """Configure the network devices"""
         p("}}gb-- Configuring network devices...}}xx")
 
-        if self.config["approved_nics"] != "" and self.config["approved_nics"] != "[]":
-            p("}}gnStoring approved NICs provided in config: " + self.config["approved_nics"] + "}}xx")
-            RegistrySettings.set_reg_value(app="OPEService", value_name="approved_nics", value=self.config["approved_nics"], value_type="REG_SZ")
+        approved_nics_config = self.config.get("approved_nics", "")
+
+        if approved_nics_config != "" and approved_nics_config != "[]":
+            p("}}gnStoring approved NICs provided in config: " + approved_nics_config + "}}xx")
+            RegistrySettings.set_reg_value(app="OPEService", value_name="approved_nics", value=approved_nics_config, value_type="REG_SZ")
             return True
 
         approved_nics = RegistrySettings.get_reg_value(app="OPEService",
                 value_name="approved_nics", default=None)
         
-        if approved_nics is None or approved_nics == "[]":
-            p("}}gnNo approved NICs found, configuring nics...}}xx")
+        if approved_nics is None or approved_nics == "[]" or approved_nics == "":
+            p("}}gnNo approved NICs found, configuring NICs...}}xx")
             NetworkDevices.configure_nics()
         else:
             p("}}gnApproved NICs: " + approved_nics + "}}xx")
@@ -388,9 +390,9 @@ class CredentialProcess:
     def validate_and_store_student_account(self):
         """Validate student account exists in SMC and get account details"""
         p("}}gb-- Validating and storing student account...}}xx")
-        smc_url = self.config['smc_url']
-        smc_admin_username = self.config['smc_admin_username']
-        student_username = self.config['student_username']
+        smc_url = self.config.get('smc_url', '')
+        smc_admin_username = self.config.get('smc_admin_username', '')
+        student_username = self.config.get('student_username', '')
 
         if not all([smc_url, smc_admin_username]):
             p("}}rbERROR: SMC URL, or admin username is not set.}}xx", log_level=1)
@@ -434,11 +436,14 @@ class CredentialProcess:
         """Validate the configuration settings"""
         p("}}gb-- Validating configuration settings...}}xx")
 
-        if not isinstance(self.config['install_vc_runtimes'], bool) or not isinstance(self.config['have_you_locked_down_the_bios'], bool):
+        install_vc_runtimes = self.config.get('install_vc_runtimes', False)
+        have_you_locked_down_the_bios = self.config.get('have_you_locked_down_the_bios', False)
+
+        if not isinstance(install_vc_runtimes, bool) or not isinstance(have_you_locked_down_the_bios, bool):
             p("}}rbERROR: install_vc_runtimes and have_you_locked_down_the_bios must be a boolean value (true or false).}}xx", log_level=1)
             return False
 
-        if not self.config['have_you_locked_down_the_bios']:
+        if not have_you_locked_down_the_bios:
             p("}}rbERROR: Have you locked down the BIOS? if yes, set have_you_locked_down_the_bios to true in the credential_config.json file and try again.    }}xx", log_level=1)
             return False
 
@@ -510,16 +515,6 @@ class CredentialProcess:
         
         return EXIT_SUCCESS
 
-    def pause_before_exit(self):
-        """Pause before exiting if running as a frozen executable (packaged as exe)"""
-        if getattr(sys, 'frozen', False):
-            # Running as a bundled executable
-            p("\n}}ynPress Enter to exit...}}xx", False)
-            try:
-                input()
-            except (EOFError, KeyboardInterrupt):
-                pass
-    
     def get_base_path(self):
         """Get the base path of the project root directory
         which is a level above the script directory"""
@@ -534,6 +529,15 @@ class CredentialProcess:
             return os.path.join(self.get_base_path(), path_str)
 
 
+def pause_before_exit():
+    """Pause before exiting if running as a frozen executable (packaged as exe)"""
+    if getattr(sys, 'frozen', False):
+        # Running as a bundled executable
+        p("\n}}ynPress Enter to exit...}}xx", False)
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
 
 def main():
     """Main entry point"""
@@ -563,7 +567,7 @@ def main():
         # unset the credential_config registry value
         RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
         # Pause before exiting if running as a frozen executable (packaged as exe)
-        process.pause_before_exit()
+        pause_before_exit()
 
 
 if __name__ == "__main__":
