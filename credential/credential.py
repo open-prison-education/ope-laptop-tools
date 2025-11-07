@@ -449,15 +449,22 @@ class CredentialProcess:
 
         # Use isinstance to check types more robustly and avoid key errors with get()
         string_keys = [
-            'smc_url', 'smc_admin_username', 'student_username',
+            'smc_url', 'smc_admin_username',
             'services_path', 'vc_runtimes_script', 'install_service_script'
         ]
         for key in string_keys:
             value = self.config.get(key)
             if not isinstance(value, str):
-                p("}}rbERROR: " + key + "must be a string value (check credential_config.json).}}xx", log_level=1)
+                p("}}rbERROR: " + key + " must be a string value (check credential_config.json).}}xx", log_level=1)
                 return False
 
+        # student_username is optional, but if it exists, it must be a string. None is also acceptable.
+        student_username = self.config.get('student_username')
+        if student_username is not None and not isinstance(student_username, str):
+            p("}}rbERROR: student_username must be a string value (check credential_config.json).}}xx", log_level=1)
+            return False
+
+        # approved_nics is optional, but if it exists, it must be a valid JSON string that decodes to a list of lists. None is also acceptable.
         approved_nics_str = self.config.get('approved_nics', '')
         if approved_nics_str != "" and approved_nics_str != "[]":
             try:
