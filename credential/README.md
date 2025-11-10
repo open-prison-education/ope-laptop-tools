@@ -23,7 +23,7 @@ Every failure path is logged, and critical steps will stop execution with the co
 1.  **Configure `credential_config.json`**:
     -   Open the `credential_config.json` file.
     -   Update the values for each key according to your setup. See the "Configuration" section below for details on each setting.
-    -   Pay special attention to `smc_admin_username` and `student_username`.
+    -   Pay special attention to `smc_admin_username` and `student_username`, though you may enter `student_username` at runtime.
 
 2.  **Run as Administrator**:
     -   The script requires administrative privileges to perform tasks like installing software, modifying system settings, and accessing the registry.
@@ -34,6 +34,9 @@ Every failure path is logged, and critical steps will stop execution with the co
     you will need to open your terminal (e.g., PowerShell or Command Prompt) as an administrator before running the script  
    ```powershell
    cd path\to\repo
+   python -m venv venv # if not already created
+   .\venv\Scripts\activate
+   pip install -r modules.txt
    python credential\credential.py
    ```
 
@@ -148,7 +151,6 @@ This file contains all the settings for the credentialing process. Below is a de
 ### Error Handling
 
 - Any failed “critical” command (unlocking, credentialing, installing services, locking) exits with code `2` to mark the device unusable until retried.
-- Non-critical issues (VC runtimes, Defender exclusion) emit warnings but do not abort the run.
 - The script always clears the `credential_config` registry flag in a `finally` block to avoid leaving stale state if interrupted.
 
 Refer to the inline logging in `credential.py` for the exact messaging emitted during each step.

@@ -239,8 +239,8 @@ class CredentialProcess:
         
         return self.run_command(
             cmd,
-            error_msg="WARNING: Failed to add Defender exclusion",
-            critical=False
+            error_msg="Error: Failed to add Defender exclusion",
+            critical=True
         )
     
     def unlock_machine(self):
@@ -405,6 +405,9 @@ class CredentialProcess:
                 p("}}rbERROR: Student username is not set.}}xx", log_level=1)
                 return False
             self.config['student_username'] = student_username
+            # update the registry with the new student username
+            RegistrySettings.set_reg_value(value_name="student_user", value=student_username, value_type="REG_SZ")
+
 
         smc_admin_password = util.get_smc_password(smc_admin_username)
         if smc_admin_password is None:
