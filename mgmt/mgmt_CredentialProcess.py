@@ -277,6 +277,15 @@ class CredentialProcess:
                 laptop_domain_ou = RegistrySettings.get_reg_value(value_name="laptop_domain_ou", default="")
                 smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="")
                 smc_admin_password = util.get_smc_password(smc_admin_user)
+                if not smc_admin_password:
+                    p("}}ynSMC Admin password not found in vault, please enter it now.}}xx")
+                    p("}}ynEnter SMC Admin Password }}cn(will not be displayed):}}xx ", False)
+                    smc_admin_password = getpass.getpass(" ")
+                    if smc_admin_password:
+                        util.store_smc_password(smc_admin_user, smc_admin_password)
+                    else:
+                        p("}}rbERROR: SMC Admin password is required.}}xx")
+                        return None
 
             ad_info = laptop_network_type
             ad_note = ""

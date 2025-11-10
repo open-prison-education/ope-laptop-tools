@@ -368,8 +368,7 @@ class CredentialProcess:
             RegistrySettings.set_reg_value(app="OPEService", value_name="approved_nics", value=approved_nics_config, value_type="REG_SZ")
             return True
 
-        approved_nics = RegistrySettings.get_reg_value(app="OPEService",
-                value_name="approved_nics", default=None)
+        approved_nics = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default=None)
         
         if approved_nics is None or approved_nics == "[]" or approved_nics == "":
             p("}}gnNo approved NICs found, configuring NICs...}}xx")
