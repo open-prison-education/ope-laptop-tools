@@ -109,7 +109,6 @@ class CredentialProcess:
             value_type="REG_DWORD")
         
 
-        # TODO - Check if credential_config registry value is True
         smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
 
         p("\n}}gbOPE Management Utility - Version: " + mgmt_version + "}}xx")
@@ -455,8 +454,10 @@ class CredentialProcess:
             p("}}rbERROR - Unable to ensure folders are present and permissions are setup properly!}}xx")
             return False
 
-        # TODO: disable in testting/debugging mode
-        # CredentialProcess.trust_ope_certs()
+        if RegistrySettings.is_debug():
+            p("}}rbDEBUG MODE ON - Skipping trust_ope_certs policy}}xx")
+        else:
+            CredentialProcess.trust_ope_certs()
 
         # Disable all student accounts
         UserAccounts.disable_student_accounts()
