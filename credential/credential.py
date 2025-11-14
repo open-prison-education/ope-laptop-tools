@@ -167,11 +167,9 @@ class CredentialProcess:
         # Set up environment and working directory for testing mode
         cwd = None
         if self.config.get('debug', 'off').lower() == "on":
-            project_root_path = os.path.normpath(os.path.join(self.script_dir, ".."))
-            cwd = project_root_path
-            p("}}gnWorking directory is set to: " + project_root_path + "}}xx", log_level=4)
+            cwd = self.get_base_path()
+            p("}}gnWorking directory is set to: " + cwd + "}}xx", log_level=4)
 
-        
         try:
             result = subprocess.run(cmd, shell=True, capture_output=False, cwd=cwd)    
             if result.returncode != 0:
