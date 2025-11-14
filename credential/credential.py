@@ -199,9 +199,8 @@ class CredentialProcess:
             return True
         
         p("}}gb-- Installing VC Runtimes...}}xx")
-        
-        vc_script = self.config.get('vc_runtimes_script', '')
-        vc_script_path = os.path.join(self.get_base_path(), self.resolve_path(vc_script))
+
+        vc_script_path = self.get_full_path(self.config.get('vc_runtimes_script', ''))
         
         if not os.path.exists(vc_script_path):
             p("}}rbError: VC Runtimes script not found: " + vc_script_path + "}}xx", log_level=1)
@@ -231,6 +230,8 @@ class CredentialProcess:
         p("")
         
         mgmt_exe = self.get_mgmt_exe_path()
+        if not mgmt_exe:
+            return False
         
         return self.run_command(
             f'{mgmt_exe} unlock_machine',
@@ -246,8 +247,7 @@ class CredentialProcess:
             p("}}gnSkipping service installation in testing mode.}}xx")
             return True
         
-        install_script = self.config.get('install_service_script', '')
-        install_script_path = self.resolve_path(install_script)
+        install_script_path = self.get_full_path(self.config.get('install_service_script', ''))
         
         if not os.path.exists(install_script_path):
             p("}}rbERROR: Install service script not found: " + install_script_path + "}}xx", log_level=1)
@@ -264,10 +264,7 @@ class CredentialProcess:
         p("}}gb-- Starting credential process...}}xx")
         
         mgmt_exe = self.get_mgmt_exe_path()
-        
-        if not os.path.exists(mgmt_exe) and self.config.get('debug', 'off').lower() == "off":
-            p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
-            p("}}ybMake sure services were installed correctly.}}xx")
+        if not mgmt_exe:
             return False
         
         return self.run_command(
@@ -281,6 +278,8 @@ class CredentialProcess:
         p("}}gb-- Locking Machine...}}xx")
         
         mgmt_exe = self.get_mgmt_exe_path()
+        if not mgmt_exe:
+            return False
         
         return self.run_command(
             f'{mgmt_exe} lock_machine',
@@ -300,8 +299,13 @@ class CredentialProcess:
             return "python -m mgmt.mgmt"
         else:
             # When frozen (bundled as an executable), script_dir is the exe's directory. The Services directory is one level above.
-            services_path = os.path.join(self.get_base_path(), self.config.get('services_path', 'Services'))
-            return os.path.join(services_path, "mgmt", "mgmt.exe")
+            services_path = self.get_full_path(self.config.get('services_path', 'Services'))
+            mgmt_exe_path = os.path.join(services_path, "mgmt", "mgmt.exe")
+            if not os.path.exists(mgmt_exe_path):
+                p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe_path + "}}xx", log_level=1)
+                p("}}ybMake sure services were installed correctly.}}xx")
+                return None
+            return mgmt_exe_path
 
     def store_config_in_registry(self):
         """Store the configuration in the registry to be used by the credential_laptop function in mgmt module"""
@@ -431,7 +435,6 @@ class CredentialProcess:
             p("}}rbERROR: Have you locked down the BIOS? if yes, set have_you_locked_down_the_bios to true in the credential_config.json file and try again.    }}xx", log_level=1)
             return False
 
-        # Use isinstance to check types more robustly and avoid key errors with get()
         string_keys = [
             'smc_url', 'smc_admin_username',
             'services_path', 'vc_runtimes_script', 'install_service_script'
@@ -448,12 +451,11 @@ class CredentialProcess:
             p("}}rbERROR: student_username must be a string value (check credential_config.json).}}xx", log_level=1)
             return False
 
-        # approved_nics is optional, but if it exists, it must be a valid JSON string that decodes to a list of lists. None is also acceptable.
+        # approved_nics is optional, but if it exists, it must be a valid JSON string that decodes to a list of lists each with [nic_name, subnet].
         approved_nics_str = self.config.get('approved_nics', '')
         if approved_nics_str != "" and approved_nics_str != "[]":
             try:
                 approved_nics = json.loads(approved_nics_str)
-                # approved_nics must be a list of lists, each with [nic_name, subnet]
                 if (
                     not isinstance(approved_nics, list) or
                     len(approved_nics) == 0 or
@@ -511,8 +513,8 @@ class CredentialProcess:
         which is a level above the script directory"""
         return os.path.normpath(os.path.join(self.script_dir, ".."))
 
-    def resolve_path(self, path_str):
-        """split path string based on forward slash or backslash and join to use correct OS separator"""
+    def get_full_path(self, path_str):
+        """Get full and split path string based on forward slash or backslash and join to use correct OS separator"""
         if "/" in path_str or "\\" in path_str:
             parts = path_str.replace("\\", "/").split("/")
             return os.path.join(self.get_base_path(), *parts)
