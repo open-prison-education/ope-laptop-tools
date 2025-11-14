@@ -213,22 +213,6 @@ class CredentialProcess:
             critical=False
         )
     
-    def run_config_once(self):
-        """Run mgmt.exe config_once to setup initial configuration"""
-        p("}}gb-- Running initial configuration...}}xx")
-
-        mgmt_exe = self.get_mgmt_exe_path()
-
-        if not os.path.exists(mgmt_exe) and self.config.get('debug', 'off').lower() == 'off':
-            p("}}rbERROR: mgmt.exe not found at: " + mgmt_exe + "}}xx", log_level=1)
-            return False
-        
-        return self.run_command(
-            f'{mgmt_exe} config_once',
-            error_msg="ERROR: Failed to run config_once",
-            critical=False
-        )
-    
     def add_defender_exclusion(self):
         """Add Windows Defender exclusion for OPE folder"""
         p("}}gb-- Adding Windows Defender exclusion...}}xx")
