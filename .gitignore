@@ -13,3 +13,4 @@
 *.version
 *build*
 *dist*
+.cursor

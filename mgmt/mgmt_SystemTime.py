@@ -83,7 +83,7 @@ class SystemTime:
 
         RegistrySettings.set_reg_value(value_name="last_ntp_sync", value=time.time())
         
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.ed")
+        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu")
         smc_host = smc_url.lower().replace("https://", "").replace("http://", "").replace("/", "")
         if ":" in smc_host:
             # port :8000 - remove it
