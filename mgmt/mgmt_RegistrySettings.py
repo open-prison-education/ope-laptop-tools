@@ -198,6 +198,31 @@ class RegistrySettings:
         return True
 
     @staticmethod
+    def remove_reg_value(root="", app="", subkey="", value_name=""):
+        """Remove a registry value (not the key itself)"""
+        if root == "":
+            root = RegistrySettings.ROOT_PATH
+
+        # Combine parts
+        path = os.path.join(root, app, subkey).replace("\\\\", "\\")
+        # Make sure we don't have a tailing \\
+        path = path.strip("\\")
+
+        try:
+            # Open the key with write access
+            key = registry.registry(path, 
+                access=REGISTRY_ACCESS.KEY_ALL_ACCESS|REGISTRY_ACCESS.KEY_WOW64_64KEY)
+            # Make sure the key exists
+            key.create()
+            # Delete the value
+            del key[value_name]
+            return True
+        except Exception as ex:
+            p("}}rnError - couldn't remove registry value }}xx\n\t" + 
+                path + ":" + value_name + "\n\t" + str(ex), debug_level=1)
+            return False
+
+    @staticmethod
     def get_reg_value(root="", app="", subkey="", value_name="", default="",
         value_type=""):
         ret = default

@@ -349,18 +349,22 @@ class CredentialProcess:
 
         approved_nics_config = self.config.get("approved_nics", "")
 
+        # If approved_nics_config is not None, it is a valid JSON string that decodes to a list of lists each with [nic_name, subnet].
         if approved_nics_config != "" and approved_nics_config != "[]":
             p("}}gnStoring approved NICs provided in config: " + approved_nics_config + "}}xx")
             RegistrySettings.set_reg_value(app="OPEService", value_name="approved_nics", value=approved_nics_config, value_type="REG_SZ")
             return True
 
-        approved_nics = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default=None)
+        approved_nics_str = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default=None)
+
+        approved_nics = json.loads(approved_nics_str)
         
-        if approved_nics is None or approved_nics == "[]" or approved_nics == "":
-            p("}}gnNo approved NICs found, configuring NICs...}}xx")
+        if not self.is_valid_approved_nics(approved_nics):
+            p("}}gnNo approved NICs found or invalid format, configuring NICs...}}xx")
+            RegistrySettings.remove_reg_value(app="OPEService", value_name="approved_nics")
             NetworkDevices.configure_nics()
         else:
-            p("}}gnApproved NICs: " + approved_nics + "}}xx")
+            p("}}gnApproved NICs: " + approved_nics_str + "}}xx")
         
         return True
 
@@ -451,18 +455,11 @@ class CredentialProcess:
             p("}}rbERROR: student_username must be a string value (check credential_config.json).}}xx", log_level=1)
             return False
 
-        # approved_nics is optional, but if it exists, it must be a valid JSON string that decodes to a list of lists each with [nic_name, subnet].
         approved_nics_str = self.config.get('approved_nics', '')
         if approved_nics_str != "" and approved_nics_str != "[]":
             try:
                 approved_nics = json.loads(approved_nics_str)
-                if (
-                    not isinstance(approved_nics, list) or
-                    len(approved_nics) == 0 or
-                    not all(isinstance(item, list) and len(item) == 2 and
-                            all(isinstance(x, str) for x in item)
-                            for item in approved_nics)
-                ):
+                if not self.is_valid_approved_nics(approved_nics):
                     p("}}rbERROR: 'approved_nics' must be a JSON-encoded list of [[\"nic_name #1\", \"subnet #1\"], [\"nic_name #2\", \"subnet #2\"]]. Check credential_config.json.}}xx", log_level=1)
                     return False
             except Exception as ex:
@@ -471,7 +468,19 @@ class CredentialProcess:
 
         p("}}gnConfiguration settings validated successfully}}xx")
         return True
-        
+
+    def is_valid_approved_nics(self, approved_nics):
+        """Validate the approved NICs - approved_nics is optional, but if it exists, it must be a valid JSON string that decodes to a list of lists each with [nic_name, subnet]."""
+        if (
+            not isinstance(approved_nics, list) or
+            len(approved_nics) == 0 or
+            not all(isinstance(item, list) and len(item) == 2 and
+            all(isinstance(x, str) for x in item)
+            for item in approved_nics)
+            ):
+                return False
+        return True
+
     def run(self):
         """Execute the complete credential process"""
         # Check admin privileges
