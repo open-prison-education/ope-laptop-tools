@@ -74,21 +74,40 @@ class Computer:
     def create_win_shortcut(lnk_path, ico_path, target_path, description):
         ret = True
 
-        # Remove old file
-        if os.path.exists(lnk_path):
-            os.unlink(lnk_path)
+        try:
+            # Ensure the directory exists
+            lnk_dir = os.path.dirname(lnk_path)
+            if lnk_dir and not os.path.exists(lnk_dir):
+                os.makedirs(lnk_dir, exist_ok=True)
 
-        shortcut = pythoncom.CoCreateInstance(
-            shell.CLSID_ShellLink,
-            None,
-            pythoncom.CLSCTX_INPROC_SERVER,
-            shell.IID_IShellLink
-        )
-        shortcut.SetPath(target_path)
-        shortcut.SetDescription(description)
-        shortcut.SetIconLocation(ico_path, 0)
-        persist_file = shortcut.QueryInterface(pythoncom.IID_IPersistFile)
-        persist_file.Save(lnk_path, 0)
+            # Expand environment variables in paths
+            target_path = os.path.expandvars(target_path)
+            ico_path = os.path.expandvars(ico_path)
+            
+            # Get the working directory (directory containing the target executable)
+            # This is crucial for relative paths resolution
+            working_dir = os.path.dirname(os.path.abspath(target_path))
+
+            # Remove old file
+            if os.path.exists(lnk_path):
+                os.unlink(lnk_path)
+
+            shortcut = pythoncom.CoCreateInstance(
+                shell.CLSID_ShellLink,
+                None,
+                pythoncom.CLSCTX_INPROC_SERVER,
+                shell.IID_IShellLink
+            )
+            shortcut.SetPath(target_path)
+            shortcut.SetDescription(description)
+            shortcut.SetIconLocation(ico_path, 0)
+            shortcut.SetWorkingDirectory(working_dir)
+            persist_file = shortcut.QueryInterface(pythoncom.IID_IPersistFile)
+            persist_file.Save(lnk_path, 0)
+
+        except Exception as e:
+            error_msg = f"Failed to create shortcut '{lnk_path}': {str(e)}"
+            raise Exception(error_msg) from e
 
         return ret
 
