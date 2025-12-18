@@ -12,16 +12,19 @@ for /f "tokens=2-4 delims=/-. " %%A in ('date /t') do (
 set year=%year:~2,2%
 set todayVersion=%year%.%month%.%day%
 
-:: Path to the mgmt.version file
-set jsonFile=.\mgmt\mgmt.version
-
 :: Initialize version counter
 set versionSuffix=0
 
-:: Check if the version file exists
-if exist %jsonFile% (
+:: Change to the parent directory (project root) to access mgmt.version
+cd /d %~dp0\..
+
+:: Path to the source mgmt.version file (for reading existing version)
+set sourceJsonFile=.\mgmt\mgmt.version
+
+:: Check if the source version file exists
+if exist %sourceJsonFile% (
     :: Extract the current version from the JSON file
-    for /f "tokens=2 delims=:, " %%A in ('findstr /i "version" %jsonFile%') do (
+    for /f "tokens=2 delims=:, " %%A in ('findstr /i "version" %sourceJsonFile%') do (
         set currentVersion=%%A
         set currentVersion=!currentVersion:"=!
     )
@@ -42,14 +45,6 @@ if exist %jsonFile% (
 
 :: Format the new version
 set newVersion=%todayVersion%.%versionSuffix%
-
-:: Write the new version back to the mgmt.version file
-(
-    echo {
-    echo     "version": "%newVersion%"
-    echo }
-) > %jsonFile%
-
 
 set VERSION=!newVersion!
 
@@ -83,9 +78,6 @@ rem python -m nuitka --python-arch=x86 --standalone  mgmt.py
 rem --noinclude-pytest-mode=nofollow --noinclude-setuptools-mode=nofollow ^
 rem --nofollow-import-to=tkinter --nofollow-import-to=pyqt5 --nofollow-import-to=numpy ^
 
-@echo off
-cd /d %~dp0
-
 python -m nuitka ^
     --standalone ^
     --file-reference-choice=runtime ^
@@ -102,9 +94,50 @@ python -m nuitka ^
     --output-dir=.\build ^
     mgmt\mgmt.py
 
-echo Move mgmt.dist to dist directory
-move /Y ".\build\mgmt.dist" ".\dist\mgmt"
+echo Create mgmt.version in build output
+if exist ".\build\mgmt.dist" (
+    (
+        echo {
+        echo     "version": "%VERSION%"
+        echo }
+    ) > ".\build\mgmt.dist\mgmt.version"
+) else (
+    echo Warning: build\mgmt.dist not found, cannot create mgmt.version
+)
 
-echo Copy mgmt.version and rc files to dist folder
-xcopy /EQy .\mgmt\mgmt.version .\dist\mgmt\
-xcopy /EQy .\mgmt\rc .\dist\mgmt\rc\
+echo Move mgmt.dist to dist directory
+:: Ensure dist directory exists
+if not exist ".\dist" (
+    mkdir ".\dist"
+)
+:: Remove existing dist\mgmt if it exists
+if exist ".\dist\mgmt" (
+    echo Removing existing dist\mgmt directory
+    rmdir /S /Q ".\dist\mgmt"
+)
+:: Move the build output to dist using robocopy (more reliable than move for directories)
+if exist ".\build\mgmt.dist" (
+    echo Moving build\mgmt.dist to dist\mgmt...
+    robocopy ".\build\mgmt.dist" ".\dist\mgmt" /E /MOVE /NFL /NDL /NJH /NJS >nul
+    if errorlevel 8 (
+        echo Error: Failed to move build\mgmt.dist to dist\mgmt
+        exit /b 1
+    )
+    :: Clean up empty source directory if robocopy left it
+    if exist ".\build\mgmt.dist" (
+        rmdir ".\build\mgmt.dist" 2>nul
+    )
+) else (
+    echo Error: build\mgmt.dist not found!
+    exit /b 1
+)
+
+echo Copy rc files to dist folder
+if exist ".\mgmt\rc" (
+    xcopy /EQy /I .\mgmt\rc .\dist\mgmt\rc\
+) else if exist ".\Services\mgmt\rc" (
+    echo Copying rc from Services\mgmt\rc
+    xcopy /EQy /I .\Services\mgmt\rc .\dist\mgmt\rc\
+) else (
+    echo Warning: rc folder not found in mgmt\ or Services\mgmt\
+)

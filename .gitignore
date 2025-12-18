@@ -11,6 +11,6 @@
 *.build
 *.dist
 *.version
-*build*
-*dist*
+build
+dist
 .cursor
