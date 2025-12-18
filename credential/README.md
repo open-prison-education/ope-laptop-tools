@@ -100,8 +100,8 @@ This file contains all the settings for the credentialing process. Below is a de
 
 - **Description**: A JSON-encoded string representing a list of approved network adapters and their allowed IP subnets.
 - **Acceptable Values**: A valid JSON string that decodes to a list of lists, each containing a network card name and its associated allowed subnet in CIDR notation. Subent can be partial.
-- **Example**: `[[ "nic_name #1", "subnet #1" ], [ "nic_name #2", "subnet #2" ]]`
-- **Required**: Yes
+- **Example**: `[[ \"nic_name #1\", \"subnet #1\" ], [ \"nic_name #2\", \"subnet #2\" ]]`
+- **Required**:No (it would use what's in SMC by default, if that is empty you would be prompted. If what you enter in approved_nics matches SMC, approved_nics value in the registry will be duplicated)
 
 
 ### `services_path`
