@@ -79,11 +79,6 @@ class CredentialProcess:
 
         # Create programdata\ope folders and set permissions
         FolderPermissions.set_default_ope_folder_permissions(force=True)
-        
-        # Run the config mgmt utility once
-        if RegistrySettings.get_reg_value(value_name="smc_url", default="<NOT CONFIGURED>") == "<NOT CONFIGURED>":
-            # Never configured - run the config prompt
-            return CredentialProcess.config_mgmt_utility()
 
         return True
         
@@ -171,14 +166,11 @@ class CredentialProcess:
         credential_config = RegistrySettings.get_reg_value(value_name="credential_config", default=False)
         mgmt_version = CredentialProcess.get_mgmt_version()
 
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
         canvas_url = ""
         canvas_access_token = ""
         student_user = RegistrySettings.get_reg_value(value_name="student_user", default="")
         student_full_name = ""
         student_password = ""
-        smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="admin")
-        smc_admin_password = ""
 
         laptop_admin_user = ""
         laptop_admin_password = ""
@@ -202,40 +194,6 @@ class CredentialProcess:
 
             """)
             if not credential_config:
-                # Ask for input (smc server, login, student name, etc...)
-                p("}}ynEnter URL for SMC Server }}cn[enter for " + smc_url + "]:}}xx ", False)
-                tmp = input()
-                tmp = tmp.strip()
-                if tmp.lower() == "quit":
-                    p("}}rnGot QUIT - exiting credential!}}xx")
-                    return None
-                if tmp == "":
-                    tmp = smc_url
-                smc_url = tmp
-                # Make sure url has https or http in it
-                if "https://" not in smc_url.lower() and "http://" not in smc_url.lower():
-                    smc_url = "https://" + smc_url
-
-                p("}}ynPlease enter the ADMIN user name }}cn[enter for " + smc_admin_user + "]:}}xx ", False)
-                tmp = input()
-                tmp = tmp.strip()
-                if tmp.lower() == "quit":
-                    p("}}rnGot QUIT - exiting credential!}}xx")
-                    return None
-                if tmp == "":
-                    tmp = smc_admin_user
-                smc_admin_user = tmp
-
-                p("}}ynPlease enter ADMIN password }}cn[characters will not show]:}}xx", False)
-                tmp = getpass.getpass(" ")
-                if tmp.lower() == "quit":
-                    p("}}rnGot QUIT - exiting credential!}}xx")
-                    return None
-                if tmp == "":
-                    p("}}rbA password is required.}}xx")
-                    continue
-                smc_admin_password = tmp
-
                 tmp = ""
                 last_student_user_prompt = ""
                 while tmp.strip() == "":
@@ -251,41 +209,30 @@ class CredentialProcess:
                         tmp = student_user
                 student_user = tmp.strip()
 
-                # - Bounce off SMC - verify_ope_account_in_smc
-                try:
-                    result = RestClient.verify_ope_account_in_smc(student_user, smc_url, smc_admin_user, smc_admin_password)
-                    if result is None:
-                        # Should show errors during the rest call, so none here
-                        #p("}}rbUnable to validate student against SMC!}}xx")
-                        # Jump to top of loop and try again
-                        continue
-                        #return False # sys.exit(-1)
-                except Exception as ex:
-                    p("}}rbError - Unable to verify student in SMC}}xx\n" + str(ex))
-                    # Jump to top of loop and try again
-                    continue
+                # TODO - Add active directory student username check here instead of SMC
+                # # - Bounce off SMC - verify_ope_account_in_smc
+                # try:
+                #     result = RestClient.verify_ope_account_in_smc(student_user, smc_url, smc_admin_user, smc_admin_password)
+                #     if result is None:
+                #         # Should show errors during the rest call, so none here
+                #         #p("}}rbUnable to validate student against SMC!}}xx")
+                #         # Jump to top of loop and try again
+                #         continue
+                #         #return False # sys.exit(-1)
+                # except Exception as ex:
+                #     p("}}rbError - Unable to verify student in SMC}}xx\n" + str(ex))
+                #     # Jump to top of loop and try again
+                #     continue
             
                 # If not None - result will be a tuple of information
-                laptop_admin_user, student_full_name, smc_version, \
+                laptop_admin_user, student_full_name, \
                 laptop_network_type, laptop_domain_name, laptop_domain_ou = result
             else:
                 laptop_admin_user = RegistrySettings.get_reg_value(value_name="laptop_admin_user", default="")
                 student_full_name = RegistrySettings.get_reg_value(value_name="student_full_name", default="")
-                smc_version = RegistrySettings.get_reg_value(value_name="smc_version", default="")
                 laptop_network_type = RegistrySettings.get_reg_value(value_name="laptop_network_type", default="")
                 laptop_domain_name = RegistrySettings.get_reg_value(value_name="laptop_domain_name", default="")
                 laptop_domain_ou = RegistrySettings.get_reg_value(value_name="laptop_domain_ou", default="")
-                smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="")
-                smc_admin_password = util.get_smc_password(smc_admin_user)
-                if not smc_admin_password:
-                    p("}}ynSMC Admin password not found in vault, please enter it now.}}xx")
-                    p("}}ynEnter SMC Admin Password }}cn(will not be displayed):}}xx ", False)
-                    smc_admin_password = getpass.getpass(" ")
-                    if smc_admin_password:
-                        util.store_smc_password(smc_admin_user, smc_admin_password)
-                    else:
-                        p("}}rbERROR: SMC Admin password is required.}}xx")
-                        return None
 
             ad_info = laptop_network_type
             ad_note = ""
@@ -314,23 +261,14 @@ class CredentialProcess:
                     return None
                 
                 ad_note = "}}rbWARNING - Make sure laptop is in the proper OU (" + laptop_domain_ou + ")}}xx"
-                
-            # TODO - Need to check laptop name - make sure it is correct
-            #    cs_caption - machin name?
-            #    cs_dns_host_name - full name?
-            # TODO - Need to see if machine is in the right OU
-                           
-            
-                
+        
+                # add active directory student username check here instead of SMC
             # Verify that the info is correct
             txt = """
 }}mn======================================================================
 }}mn| }}gbFound Student - Continue?                                          }}mn|
 }}mn| }}ynCredential Version:    }}cn<mgmt_version>}}mn|
-}}mn| }}ynSMC URL:               }}cn<smc_url>}}mn|
-}}mn| }}ynSMC Version:           }}cn<smc_version>}}mn|
 }}mn| }}ynActive Directory Info: }}cn<ad_info>}}mn|
-}}mn| }}ynLaptop Admin User:     }}cn<admin_user>}}mn|
 }}mn| }}ynStudent Username:      }}cn<student_user>}}mn|
 }}mn| }}ynSystem Serial Number:  }}cn<bios_serial_number>}}mn|
 }}mn| }}ynDisk Serial Number:    }}cn<disk_serial_number>}}mn|
@@ -339,11 +277,7 @@ class CredentialProcess:
             """
             col_size = 44
             txt = txt.replace("<mgmt_version>", mgmt_version.ljust(col_size))
-            txt = txt.replace("<smc_url>", smc_url.ljust(col_size))
-            txt = txt.replace("<smc_version>", smc_version.ljust(col_size))
             txt = txt.replace("<ad_info>", ad_info.ljust(col_size))
-            txt = txt.replace("<admin_user>", laptop_admin_user.ljust(col_size))
-            txt = txt.replace("<admin_pass>", "******".ljust(col_size))
             student_text = student_user + " (" + student_full_name + ")"
             txt = txt.replace("<student_user>", student_text.ljust(col_size))
             txt = txt.replace("<bios_serial_number>", 
@@ -379,34 +313,13 @@ class CredentialProcess:
 
             # - Bounce off SMC - lms/credential_student.json/??
             result = None
-            try:
-                ex_info = dict()
-                ex_info["logged_in_user"] = UserAccounts.get_current_user()
-                ex_info["admin_user"] = laptop_admin_user
-                ex_info["current_student"] = student_user
-                ex_info["mgmt_version"] = mgmt_version
-                
-                ex_info.update(CredentialProcess.COMPUTER_INFO)
-
-                result = RestClient.credential_student_in_smc(
-                    student_user, smc_url, smc_admin_user, smc_admin_password,
-                    dict(ex_info=ex_info))
-                if result is None:
-                    p("}}rbUnable to credential student via SMC!}}xx")
-                    # Jump to top of loop and try again
-                    continue
-                    #return False # sys.exit(-1)
-            except Exception as ex:
-                p("}}rbError - Unable to credential student via SMC}}xx\n" + str(ex))
-                # Jump to top of loop and try again
-                continue
             
             (student_full_name, canvas_url, canvas_access_token,
             student_password, laptop_admin_password) = result
             loop_running = False
 
         ret = (student_user, student_full_name, student_password, laptop_admin_user,
-            laptop_admin_password, canvas_access_token, canvas_url, smc_url,
+            laptop_admin_password, canvas_access_token, canvas_url,
             laptop_network_type, laptop_domain_name, laptop_domain_ou)
 
         return ret
@@ -426,15 +339,6 @@ class CredentialProcess:
         
         # Get computer info
         CredentialProcess.COMPUTER_INFO = Computer.get_machine_info(print_info=False)
-
-        # Are we in a domain?
-        # NOTE - Moved until later - we now can be in a domain if configured.
-        # if CredentialProcess.COMPUTER_INFO["cs_part_of_domain"] is True:
-        #     #p("}}rbSystem is joined to an Active Directory Domain - NOT SUPPORTED!\n" +
-        #     #    "Please remove this from the domain as it might interfere with security settings.}}xx")
-        #     #return False
-        #     p("}}rbSystem is joined to an Active Directory Domain - BETA!!\n" +
-        #       "Only continue if testing.}}xx")
         
         # Are we using a proper edition win 10 or 11? (Home not supported, ed, pro, enterprise ok?)
         # OK - win 10 - pro, ed, enterprise
@@ -475,8 +379,8 @@ class CredentialProcess:
         if result is None:
             # Unable to verify?
             return False
-        (student_user, student_name, student_password, admin_user, admin_password,
-            canvas_access_token, canvas_url, smc_url,
+        (student_user, student_name, student_password,
+            canvas_access_token, canvas_url,
             laptop_network_type, laptop_domain_name, laptop_domain_ou) = result
         
         # - Create local student account
@@ -486,13 +390,6 @@ class CredentialProcess:
                 p("}}rbError setting up OPE Student Account}}xx\n " + str(student_user))
                 return False
 
-            # - Setup admin user
-            p("}}gnCreating local admin windows account...}}xx")
-            try:
-                UserAccounts.create_local_admin_account(admin_user, "OPE Laptop Admin", admin_password)
-            except Exception as ex:
-                p("}}rbError setting up OPE Laptop Admin Account}}xx\n " + str(ex))
-            admin_password = ""
         else:
             p("}}gnRunning as domain laptop, skipping create local student windows account...}}xx")
             # if not UserAccounts.create_local_student_account(student_user, student_name, student_password):
@@ -503,8 +400,8 @@ class CredentialProcess:
         
 
         # Store the credential information
-        if not RegistrySettings.store_credential_info(canvas_access_token, canvas_url, smc_url,
-            student_user, student_name, admin_user,
+        if not RegistrySettings.store_credential_info(canvas_access_token, canvas_url,
+            student_user, student_name,
             laptop_network_type, laptop_domain_name, laptop_domain_ou):
             p("}}rbError saving registry info!}}xx")
             return False
@@ -572,7 +469,6 @@ class CredentialProcess:
         ret = True
 
         laptop_network_type = CredentialProcess.get_credentialed_network_type()
-        laptop_domain_name = CredentialProcess.get_credentialed_domain_name()
 
 
         # Make sure mgmt is in the system path
@@ -651,7 +547,6 @@ class CredentialProcess:
         #     return False
         
         laptop_network_type = CredentialProcess.get_credentialed_network_type()
-        laptop_domain_name = CredentialProcess.get_credentialed_domain_name()
 
         # # Log out the student
         # if not UserAccounts.log_out_user(student_user_name):

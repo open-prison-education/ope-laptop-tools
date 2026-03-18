@@ -311,36 +311,14 @@ class CredentialProcess:
         """Store the configuration in the registry to be used by the credential_laptop function in mgmt module"""
         p("}}gb-- Storing configuration in the registry...}}xx")
 
-        smc_url = self.config.get('smc_url', '')
-        smc_admin_user = self.config.get('smc_admin_username', '')
         student_user = self.config.get('student_username', '')
         debug = self.config.get('debug', 'off')
 
-        RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
 
         p("}}gb-- Configuration stored in the registry...}}xx")
 
-        return True
-
-    def validate_and_store_smc_config(self):
-        """Validate the SMC configuration"""
-        smc_url = self.config.get('smc_url', '')
-        if smc_url == "":
-            p("}}rbERROR: SMC URL is not set.}}xx", log_level=1)
-            return False
-        
-        smc_config = RestClient.get_smc_config(smc_url)
-        if smc_config is None:
-            p("}}rbERROR: Unable to get SMC configuration.}}xx", log_level=1)
-            return False
-        
-        p("}}gnSMC configuration: " + str(smc_config) + "}}xx")
-
-        RegistrySettings.store_smc_config(smc_config)
-        
         return True
 
     def configure_network_devices(self):
@@ -379,13 +357,7 @@ class CredentialProcess:
     def validate_and_store_student_account(self):
         """Validate student account exists in SMC and get account details"""
         p("}}gb-- Validating and storing student account...}}xx")
-        smc_url = self.config.get('smc_url', '')
-        smc_admin_username = self.config.get('smc_admin_username', '')
         student_username = self.config.get('student_username', '')
-
-        if not all([smc_url, smc_admin_username]):
-            p("}}rbERROR: SMC URL, or admin username is not set.}}xx", log_level=1)
-            return False
 
         if not student_username:
             p("}}cnStudent username not set, please enter it now:}}xx")
@@ -398,28 +370,22 @@ class CredentialProcess:
             RegistrySettings.set_reg_value(value_name="student_user", value=student_username, value_type="REG_SZ")
 
 
-        smc_admin_password = util.get_smc_password(smc_admin_username)
-        if smc_admin_password is None:
-            smc_admin_password = getpass.getpass(prompt=f"Enter SMC admin password:")
-            if not util.store_smc_password(smc_admin_username, smc_admin_password):
-                return False
-        
-        result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
-        if result is None:
-            p("}}rbERROR: Unable to verify student account in SMC.}}xx", log_level=1)
-            return False
+        # TODO - Add active directory student username check here instead of SMC
+        # result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
+        # if result is None:
+        #     p("}}rbERROR: Unable to verify student account in SMC.}}xx", log_level=1)
+        #     return False
 
         # Store the returned information in registry for later use
-        laptop_admin_user, student_full_name, smc_version, \
-        laptop_network_type, laptop_domain_name, laptop_domain_ou = result
+        # laptop_admin_user, student_full_name, \
+        # laptop_network_type, laptop_domain_name, laptop_domain_ou = result
 
         # Store these values in registry
-        RegistrySettings.set_reg_value(value_name="laptop_admin_user", value=laptop_admin_user, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="student_full_name", value=student_full_name, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="smc_version", value=smc_version, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
+        # RegistrySettings.set_reg_value(value_name="laptop_admin_user", value=laptop_admin_user, value_type="REG_SZ")
+        # RegistrySettings.set_reg_value(value_name="student_full_name", value=student_full_name, value_type="REG_SZ")
+        # RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
+        # RegistrySettings.set_reg_value(value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
+        # RegistrySettings.set_reg_value(value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
 
         p("}}gnStudent account validated and stored successfully}}xx")
         return True
@@ -440,8 +406,7 @@ class CredentialProcess:
             return False
 
         string_keys = [
-            'smc_url', 'smc_admin_username',
-            'services_path', 'vc_runtimes_script', 'install_service_script'
+            'smc_url', 'services_path', 'vc_runtimes_script', 'install_service_script'
         ]
         for key in string_keys:
             value = self.config.get(key)
@@ -489,11 +454,10 @@ class CredentialProcess:
 
         self.store_config_in_registry()
         
-        initial_checks = (self.validate_and_store_smc_config, self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
+        initial_checks = (self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
         for check in initial_checks:
             if not check():
                 p("}}rbInitial check failed: " + check.__name__ + "}}xx", log_level=1)
-                RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
                 return EXIT_ERROR
         
         # Execute workflow steps
