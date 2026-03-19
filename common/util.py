@@ -2,6 +2,7 @@ import sys
 import os
 from win32com.shell import shellcon, shell
 import win32cred
+import win32com.client
 
 # Should be programdata files folder
 ROOT_FOLDER = os.path.join(
@@ -95,12 +96,12 @@ def get_param(param_index=1, default_value="", only_for=None):
     
     return ret
 
-def store_smc_password(username, password):
-    """Store the SMC password in the credential vault"""
+def store_password(username, password):
+    """Store password in the credential vault"""
     from common.color import p
     
     credential_data = {
-        "TargetName": f"SMC_{username}",
+        "TargetName": f"{username}",
         "Type": win32cred.CRED_TYPE_GENERIC,
         "UserName": username,
         "CredentialBlob": password,
@@ -109,22 +110,66 @@ def store_smc_password(username, password):
 
     try:
         win32cred.CredWrite(credential_data, 0)
-        p("}}gnSMC admin password stored in the credential vault successfully}}xx", log_level=3)
+        p("}}gnPassword stored in the credential vault successfully}}xx", log_level=3)
         return True
     except Exception as ex:
-        p("}}rbERROR: Failed to store SMC admin password in the credential vault: " + str(ex) + "}}xx", log_level=1)
+        p("}}rbERROR: Failed to store password in the credential vault: " + str(ex) + "}}xx", log_level=1)
         return False
 
-def get_smc_password(username):
-    """Get the SMC password from the credential vault"""
+def get_password(username):
+    """Get password from the credential vault"""
     from common.color import p
     
     try:
-        credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
+        credential_data = win32cred.CredRead(f"{username}", win32cred.CRED_TYPE_GENERIC)
         return credential_data["CredentialBlob"].decode('utf-16le')
     except Exception as ex:
-        p("}}ynNo password found for SMC_" + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
+        p("}}ynNo password found for " + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
         return None
+
+
+def check_adsi(username, base_dn):
+    """Validate username using Windows ADSI (Active Directory Service Interfaces, via pywin32). Only works on Windows, domain-joined."""
+
+    try:
+        # LDAP path to the OU we care about (ADSI ADO uses this in FROM clause)
+        ad_path = f"LDAP://{base_dn}"
+        # Escape special chars in username for LDAP filter
+        safe_user = username.replace("\\", "\\5c").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29")
+
+        conn = win32com.client.Dispatch("ADODB.Connection")
+        conn.Provider = "ADsDSOObject"
+        conn.Open("Active Directory Provider", "", "")
+
+        cmd = win32com.client.Dispatch("ADODB.Command")
+        cmd.ActiveConnection = conn
+        cmd.CommandText = f"SELECT distinguishedName FROM '{ad_path}' WHERE objectCategory='user' AND sAMAccountName='{safe_user}'"
+
+        rs = cmd.Execute()
+        if rs.EOS:
+            return False, None
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+def verify_student_account_in_ad(username, base_dn):
+    """Verify student account in Active Directory
+        Run only on a domain-joined Windows machine.
+
+    Args:
+        username: The sAMAccountName (logon name) to look up.
+        base_dn: LDAP base DN (e.g. "OU=ABC Corp Users, DC=abc, DC=org).
+        """
+    if not username or not username.strip():
+        return False, "Username is empty"
+
+    username = username.strip()
+    base_dn = base_dn
+
+    if sys.platform != "win32":
+        return False, "Requires Windows on a domain-joined machine (ADSI)."
+
+    return check_adsi(username, base_dn)
 
 def test_params():
 
