@@ -8,7 +8,6 @@ import sys
 import json
 import subprocess
 import ctypes
-import getpass
 
 # Add parent directory to path so we can import common and mgmt modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +17,6 @@ from common.color import p
 from common import util
 from mgmt.mgmt_EventLog import EventLog
 from mgmt.mgmt_RegistrySettings import RegistrySettings
-from mgmt.mgmt_RestClient import RestClient
 from mgmt.mgmt_SystemTime import SystemTime
 from mgmt.mgmt_NetworkDevices import NetworkDevices
 
@@ -313,9 +311,11 @@ class CredentialProcess:
 
         student_user = self.config.get('student_username', '')
         debug = self.config.get('debug', 'off')
+        base_dn = self.config.get('base_dn', '')
 
         RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="base_dn", value=base_dn, value_type="REG_SZ")
 
         p("}}gb-- Configuration stored in the registry...}}xx")
 
@@ -369,25 +369,27 @@ class CredentialProcess:
             # update the registry with the new student username
             RegistrySettings.set_reg_value(value_name="student_user", value=student_username, value_type="REG_SZ")
 
+        base_dn = self.config.get('base_dn', '')
+        result, error = util.verify_student_account_in_ad(student_username, base_dn)
+        if not result:
+            p("}}rbERROR: Unable to verify student account in Active Directory: " + error + "}}xx", log_level=1)
+            return False
 
-        # TODO - Add active directory student username check here instead of SMC
-        # result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
-        # if result is None:
-        #     p("}}rbERROR: Unable to verify student account in SMC.}}xx", log_level=1)
-        #     return False
+        # TODO - what to do if it's not a domain member? do we stop credentialing? or add a flag to continue? ask about standalone mode?
+        # do we need to distinguish between domain member and standalone mode anymore?
 
-        # Store the returned information in registry for later use
-        # laptop_admin_user, student_full_name, \
-        # laptop_network_type, laptop_domain_name, laptop_domain_ou = result
+        laptop_network_type = "Domain Member"
+        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
 
-        # Store these values in registry
-        # RegistrySettings.set_reg_value(value_name="laptop_admin_user", value=laptop_admin_user, value_type="REG_SZ")
-        # RegistrySettings.set_reg_value(value_name="student_full_name", value=student_full_name, value_type="REG_SZ")
-        # RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
-        # RegistrySettings.set_reg_value(value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
-        # RegistrySettings.set_reg_value(value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
 
         p("}}gnStudent account validated and stored successfully}}xx")
+        return True
+
+    def store_laptop_network_type(self):
+        """Store the laptop network type in the registry"""
+        p("}}gb-- Storing laptop network type in the registry...}}xx")
+        laptop_network_type = self.config.get('laptop_network_type', '')
+        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
         return True
 
     def validate_config_settings(self):
@@ -406,7 +408,7 @@ class CredentialProcess:
             return False
 
         string_keys = [
-            'smc_url', 'services_path', 'vc_runtimes_script', 'install_service_script'
+            'base_dn', 'services_path', 'vc_runtimes_script', 'install_service_script'
         ]
         for key in string_keys:
             value = self.config.get(key)
