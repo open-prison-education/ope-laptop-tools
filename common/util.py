@@ -143,12 +143,12 @@ def check_adsi(username, base_dn):
 
         cmd = win32com.client.Dispatch("ADODB.Command")
         cmd.ActiveConnection = conn
-        cmd.CommandText = f"SELECT distinguishedName FROM '{ad_path}' WHERE objectCategory='user' AND sAMAccountName='{safe_user}'"
+        cmd.CommandText = f"SELECT displayName FROM '{ad_path}' WHERE objectCategory='user' AND sAMAccountName='{safe_user}'"
 
         rs = cmd.Execute()[0]
         if rs.EOF or rs is None:
             return False, "User not found in Active Directory"
-        return True, None
+        return True, rs.Fields("displayName").Value
     except Exception as e:
         return False, "Error checking Active Directory: " + str(e)
 
