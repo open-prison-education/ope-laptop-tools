@@ -312,6 +312,12 @@ class CredentialProcess:
         student_user = self.config.get('student_username', '')
         debug = self.config.get('debug', 'off')
         base_dn = self.config.get('base_dn', '')
+        is_domain_joined = self.config.get('is_domain_joined', False)
+
+        if is_domain_joined:
+            RegistrySettings.set_reg_value(value_name="is_domian_joined", value=True, value_type="REG_DWORD")
+        else:
+            RegistrySettings.set_reg_value(value_name="is_domian_joined", value=False, value_type="REG_DWORD")
 
         RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
@@ -357,7 +363,7 @@ class CredentialProcess:
     def validate_and_store_student_account(self):
         """Validate student account exists in SMC and get account details"""
         p("}}gb-- Validating and storing student account...}}xx")
-        student_username = self.config.get('student_username', '')
+        student_username = RegistrySettings.get_reg_value(value_name="student_user", default="")
 
         if not student_username:
             p("}}cnStudent username not set, please enter it now:}}xx")
@@ -368,28 +374,19 @@ class CredentialProcess:
             self.config['student_username'] = student_username
             # update the registry with the new student username
             RegistrySettings.set_reg_value(value_name="student_user", value=student_username, value_type="REG_SZ")
+        
+        is_domain_joined = RegistrySettings.get_reg_value(value_name="is_domian_joined", default=False)
+        if not is_domain_joined:
+            p("}}laptop is not domain joined, skipping student account validation...}}xx")
+            return True
 
-        base_dn = self.config.get('base_dn', '')
-        result, error = util.verify_student_account_in_ad(student_username, base_dn)
-        if not result:
-            p("}}rbERROR: Unable to verify student account in Active Directory: " + error + "}}xx", log_level=1)
+        base_dn = RegistrySettings.get_reg_value(value_name="base_dn", default="")
+        success, msg = util.verify_student_account_in_ad(student_username, base_dn)
+        if not success:
+            p("}}rbERROR: Unable to verify student account in Active Directory: " + msg + "}}xx", log_level=1)
             return False
-
-        # TODO - what to do if it's not a domain member? do we stop credentialing? or add a flag to continue? ask about standalone mode?
-        # do we need to distinguish between domain member and standalone mode anymore?
-
-        laptop_network_type = "Domain Member"
-        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
-
-
-        p("}}gnStudent account validated and stored successfully}}xx")
-        return True
-
-    def store_laptop_network_type(self):
-        """Store the laptop network type in the registry"""
-        p("}}gb-- Storing laptop network type in the registry...}}xx")
-        laptop_network_type = self.config.get('laptop_network_type', '')
-        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="student_name", value=msg, value_type="REG_SZ")
+        p("}}gnStudent account validated and stored successfully: " + msg + "}}xx")
         return True
 
     def validate_config_settings(self):
@@ -398,9 +395,10 @@ class CredentialProcess:
 
         install_vc_runtimes = self.config.get('install_vc_runtimes', False)
         have_you_locked_down_the_bios = self.config.get('have_you_locked_down_the_bios', False)
+        is_domain_joined = self.config.get('is_domain_joined', False)
 
-        if not isinstance(install_vc_runtimes, bool) or not isinstance(have_you_locked_down_the_bios, bool):
-            p("}}rbERROR: install_vc_runtimes and have_you_locked_down_the_bios must be a boolean value (true or false).}}xx", log_level=1)
+        if not isinstance(install_vc_runtimes, bool) or not isinstance(have_you_locked_down_the_bios, bool) or not isinstance(is_domain_joined, bool):
+            p("}}rbERROR: install_vc_runtimes, have_you_locked_down_the_bios, and is_domain_joined must be a boolean value (true or false).}}xx", log_level=1)
             return False
 
         if not have_you_locked_down_the_bios:
