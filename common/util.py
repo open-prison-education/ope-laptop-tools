@@ -145,12 +145,12 @@ def check_adsi(username, base_dn):
         cmd.ActiveConnection = conn
         cmd.CommandText = f"SELECT distinguishedName FROM '{ad_path}' WHERE objectCategory='user' AND sAMAccountName='{safe_user}'"
 
-        rs = cmd.Execute()
-        if rs.EOS:
-            return False, None
+        rs = cmd.Execute()[0]
+        if rs.EOF or rs is None:
+            return False, "User not found in Active Directory"
         return True, None
     except Exception as e:
-        return False, str(e)
+        return False, "Error checking Active Directory: " + str(e)
 
 def verify_student_account_in_ad(username, base_dn):
     """Verify student account in Active Directory
