@@ -30,8 +30,8 @@ Every failure path is logged, and critical steps will stop execution with the co
     -   **For `credential.exe`**, you can right-click the file and select "Run as administrator".
     -   **For `credential.py`**, follow step 3 below.
 
-3. **for running `credential.py` (skip this step when running `credential.exe`):**
-    you will need to open your terminal (e.g., PowerShell or Command Prompt) as an administrator before running the script  
+3. **For running `credential.py` (skip this step when running `credential.exe`):**
+    You will need to open your terminal (e.g., PowerShell or Command Prompt) as an administrator before running the script.
    ```powershell
    cd path\to\repo
    python -m venv venv # if not already created
@@ -71,19 +71,10 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ---
 
-### `smc_url`
+### `is_domain_joined`
 
--   **Description**: The URL for the Student Management Console (SMC).
--   **Acceptable Values**: A valid URL string.
--   **Example**: `"https://smc.corrections.sbctc.edu/"`
--   **Required**: Yes
-
----
-
-### `smc_admin_username`
-
--   **Description**: The username for an admin account on the SMC. This is used to verify the student's account.
--   **Acceptable Values**: A valid SMC admin username string.
+-   **Description**: A boolean value to determine if the student username should be checked in Active Directory and full security policies applied. Setting this to `false` is useful for partially testing the credential process. Always set this to `true` for the complete credential process.
+-   **Acceptable Values**: `true`, `false` (boolean)
 -   **Required**: Yes
 
 ---
@@ -99,14 +90,15 @@ This file contains all the settings for the credentialing process. Below is a de
 ### `approved_nics`
 
 - **Description**: A JSON-encoded string representing a list of approved network adapters and their allowed IP subnets.
-- **Acceptable Values**: A valid JSON string that decodes to a list of lists, each containing a network card name and its associated allowed subnet in CIDR notation. Subent can be partial.
+- **Acceptable Values**: A valid JSON string that decodes to a list of lists, each containing a network card name and its associated allowed subnet in CIDR notation. Subnet can be partial.
 - **Example**: `[[ \"nic_name #1\", \"subnet #1\" ], [ \"nic_name #2\", \"subnet #2\" ]]`
-- **Required**:No (it would use what's in SMC by default, if that is empty you would be prompted. If what you enter in approved_nics matches SMC, approved_nics value in Windows registry will be duplicated)
+- **Required**: No (If that is empty, you will be prompted.)
 
+---
 
 ### `services_path`
 
--   **Description**: The relative path to the directory from root project containing the OPE services, including `mgmt.exe`.
+-   **Description**: The relative path from the project root to the directory containing the OPE services, including `mgmt.exe`.
 -   **Acceptable Values**: A string representing a valid path.
 -   **Example**: `"Services"`
 -   **Required**: Yes
@@ -115,7 +107,7 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ### `vc_runtimes_script`
 
--   **Description**: The relative path to the directory from root project to the script used for installing for installing the Visual C++ runtimes.
+-   **Description**: The relative path from the project root to the script used for installing the Visual C++ runtimes.
 -   **Acceptable Values**: A string representing a valid path to a `.cmd` or `.bat` file.
 -   **Example**: `"bin/install_vc_runtimes.cmd"`
 -   **Required**: Yes
@@ -124,7 +116,7 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ### `install_service_script`
 
--   **Description**: The relative path to the directory from root project to the script used for installing the OPE services.
+-   **Description**: The relative path from the project root to the script used for installing the OPE services.
 -   **Acceptable Values**: A string representing a valid path to a `.cmd` or `.bat` file.
 -   **Example**: `"bin/install_service.cmd"`
 -   **Required**: Yes
@@ -140,13 +132,14 @@ This file contains all the settings for the credentialing process. Below is a de
 -   **Acceptable Values**: `"on"`, `"off"` (string)
 -   **Required**: No
 
+---
 
 ### Runtime Behaviour Influenced by Configuration
 
 - `install_vc_runtimes=false` logs the choice and continues without invoking the batch installer.
 - `debug="on"` sets the working directory to the project root, runs `mgmt` via Python, skips service installation, and bypasses the confirmation prompt.
 - When not in debug mode the script expects `mgmt.exe` to exist under `services_path\mgmt\mgmt.exe`; missing files raise errors and halt the process.
-- Registry values written by the script (`smc_url`, `student_user`, `debug`, etc.) feed the downstream `mgmt` credential flow.
+- Registry values written by the script (`is_domain_joined`, `student_user`, `debug`, etc.) feed the downstream `mgmt` credential flow.
 
 ### Error Handling
 
