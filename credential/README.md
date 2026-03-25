@@ -13,7 +13,7 @@ At a high level the process performs the following:
 - Confirms the JSON configuration is complete and operator has locked down the BIOS.
 - Verifies the session is elevated (UAC/Admin) before proceeding.
 - Caches configuration data in the registry for downstream services.
-- Pulls SMC configuration, confirms the target student account, and syncs NIC/time settings.
+- Confirms the target student account, and syncs NIC/time settings.
 - Orchestrates `mgmt.exe` commands to unlock the machine, credential the laptop, add Defender exclusions, install services, and relock the device.
 
 Every failure path is logged, and critical steps will stop execution with the correct exit code so the laptop is not handed to students in an unfinished state.
@@ -23,7 +23,7 @@ Every failure path is logged, and critical steps will stop execution with the co
 1.  **Configure `credential_config.json`**:
     -   Open the `credential_config.json` file.
     -   Update the values for each key according to your setup. See the "Configuration" section below for details on each setting.
-    -   Pay special attention to `smc_admin_username` and `student_username`, though you may enter `student_username` at runtime.
+    -   Pay special attention to `is_domain_joined` and `student_username`, though you may enter `student_username` at runtime.
 
 2.  **Run as Administrator**:
     -   The script requires administrative privileges to perform tasks like installing software, modifying system settings, and accessing the registry.
