@@ -49,14 +49,10 @@ class CredentialProcess:
         return ret
 
     @staticmethod
-    def get_credentialed_network_type():
-        # Return the name of the current credentialed student or None if missing
-        return RegistrySettings.get_reg_value(app="OPEService", value_name="laptop_network_type", default=None)
-    
-    @staticmethod
-    def get_credentialed_domain_name():
-        # Return the name of the current credentialed student or None if missing
-        return RegistrySettings.get_reg_value(app="OPEService", value_name="laptop_domain_name", default=None)
+    def is_credentialed_domain_joined():
+        """Return True if the credentialed laptop is domain-joined, False otherwise."""
+        val = RegistrySettings.get_reg_value(value_name="is_domain_joined", default=0)
+        return bool(val)
     
     @staticmethod
     def get_credentialed_student():
@@ -86,7 +82,6 @@ class CredentialProcess:
     def config_mgmt_utility():
         mgmt_version = CredentialProcess.get_mgmt_version()
 
-        # Setup local groups for students and admins
         UserAccounts.create_local_students_group()
         UserAccounts.create_local_admins_group()
 
@@ -102,87 +97,53 @@ class CredentialProcess:
             app="System\\CurrentControlSet\\Control\\Terminal Server",
             value_name="AllowRemoteRPC", value="1",
             value_type="REG_DWORD")
-        
-
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
 
         p("\n}}gbOPE Management Utility - Version: " + mgmt_version + "}}xx")
 
-        # 4 - Ask for input (smc server, login, student name, etc...)
-        p("}}ynEnter URL for SMC Server }}cn[enter for " + smc_url + "]:}}xx ", False)
-        tmp = input()
-        tmp = tmp.strip()
-        if tmp == "":
-            tmp = smc_url
-        smc_url = tmp
-        # Make sure url has https or http in it
-        if "https://" not in smc_url.lower() and "http://" not in smc_url.lower():
-            smc_url = "https://" + smc_url
-
-        p("}}gnSetting SMC URL to " + smc_url + "}}xx")
-        RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url) 
-
-        # Getting config from SMC
-        smc_config = RestClient.get_smc_config(smc_url)
-        if smc_config is None:
-            p("}}rbError - Unable to get SMC Config!}}xx")
-            return False
-        
-        #p("}}gnSMC Config: " + str(smc_config) + "}}xx")
-        RegistrySettings.store_smc_config(smc_config)
-        
-        # Start time sync
         p("}}gnSyncing time with NTP servers...}}xx")
         SystemTime.sync_time_w_ntp(force=True)
-        
 
-        # Check on list of nics and make sure the current IP is added if desired...
         p("}}gnConfiguring Network Devices...}}xx")
         NetworkDevices.configure_nics()
 
-        # Doesn't work - group policy overwrites it every time it refreshes
-        # Make sure OPEAdmins can logon locally
-        #UserAccounts.allow_group_to_logon_locally("OPEAdmins")
-        # Remove the users group from logon locally
-        #UserAccounts.remove_group_from_logon_locally("Users")
-
         # Check if current user is in the OPEadmins group
         active_user = UserAccounts.get_active_user_name()
-        if not active_user is None and active_user.lower() != "system" and not UserAccounts.is_user_in_group(active_user, "OPEAdmins"):
-            # Add active user to OPEAdmins group
+        if active_user is not None and active_user.lower() != "system" and not UserAccounts.is_user_in_group(active_user, "OPEAdmins"):
             p("}}gnAdding current user (" + active_user + ") to OPEAdmins group...}}xx")
             UserAccounts.add_user_to_group(active_user, "OPEAdmins")
 
         return True
 
     @staticmethod
-    def credential_input_verify_loop():
-        # Loop until we quit or get good stuff
-
-        # Return a list of values
-        # student_full_name, laptop_admin_user, laptop_admin_password
-        ret = []
-
-        credential_config = RegistrySettings.get_reg_value(value_name="credential_config", default=False)
-        mgmt_version = CredentialProcess.get_mgmt_version()
-
-        canvas_url = ""
-        canvas_access_token = ""
+    def _get_student_info_from_registry():
+        """Read student info from registry (called from credential.py pipeline)."""
         student_user = RegistrySettings.get_reg_value(value_name="student_user", default="")
-        student_full_name = ""
-        student_password = ""
+        student_name = RegistrySettings.get_reg_value(value_name="student_name", default="")
+        is_domain_joined = bool(RegistrySettings.get_reg_value(value_name="is_domain_joined", default=0))
 
-        laptop_admin_user = ""
-        laptop_admin_password = ""
+        if not student_user:
+            p("}}rbNo student_user found in registry!}}xx")
+            return None
 
-        laptop_network_type = "Standalone"
-        laptop_domain_name = ""
-        laptop_domain_ou = "" 
+        student_password = None
+        if not is_domain_joined:
+            import secrets
+            student_password = secrets.token_urlsafe(6)
+            util.store_password(student_user, student_password)
+
+        return (student_user, student_name, student_password, is_domain_joined)
+
+    @staticmethod
+    def _get_student_info_interactive():
+        """Prompt for student info interactively (standalone mgmt invocation)."""
+        mgmt_version = CredentialProcess.get_mgmt_version()
+        student_user = RegistrySettings.get_reg_value(value_name="student_user", default="")
+        is_domain_joined = bool(RegistrySettings.get_reg_value(value_name="is_domain_joined", default=0))
+        base_dn = RegistrySettings.get_reg_value(value_name="base_dn", default="")
 
         loop_running = True
         while loop_running:
             p("\n}}gb Version: " + mgmt_version + "}}xx")
-            
             p("""
 
 }}mn======================================================================
@@ -193,77 +154,47 @@ class CredentialProcess:
 }}mn======================================================================}}xx
 
             """)
-            if not credential_config:
-                tmp = ""
-                last_student_user_prompt = ""
-                while tmp.strip() == "":
-                    if student_user != "":
-                        last_student_user_prompt = " }}cn[enter for previous student " + student_user + "]"
-                        # p("}}mb\t- Found previously credentialed user: }}xx" + str(last_student_user))
-                    p("}}ynPlease enter the username for the student" + last_student_user_prompt + ":}}xx ", False)
-                    tmp = input()
-                    if tmp.lower() == "quit":
-                        p("}}rnGot QUIT - exiting credential!}}xx")
+
+            tmp = ""
+            last_student_user_prompt = ""
+            while tmp.strip() == "":
+                if student_user != "":
+                    last_student_user_prompt = " }}cn[enter for previous student " + student_user + "]"
+                p("}}ynPlease enter the username for the student" + last_student_user_prompt + ":}}xx ", False)
+                tmp = input()
+                if tmp.lower() == "quit":
+                    p("}}rnGot QUIT - exiting credential!}}xx")
+                    return None
+                if tmp.strip() == "":
+                    tmp = student_user
+            student_user = tmp.strip()
+
+            student_name = ""
+            student_password = None
+
+            if is_domain_joined:
+                if base_dn:
+                    success, result_msg = util.verify_student_account_in_ad(student_user, base_dn)
+                    if not success:
+                        p("}}rbUnable to verify student in AD: " + result_msg + "}}xx")
                         return None
-                    if tmp.strip() == "":
-                        tmp = student_user
-                student_user = tmp.strip()
-
-                # TODO - Add active directory student username check here instead of SMC
-                # # - Bounce off SMC - verify_ope_account_in_smc
-                # try:
-                #     result = RestClient.verify_ope_account_in_smc(student_user, smc_url, smc_admin_user, smc_admin_password)
-                #     if result is None:
-                #         # Should show errors during the rest call, so none here
-                #         #p("}}rbUnable to validate student against SMC!}}xx")
-                #         # Jump to top of loop and try again
-                #         continue
-                #         #return False # sys.exit(-1)
-                # except Exception as ex:
-                #     p("}}rbError - Unable to verify student in SMC}}xx\n" + str(ex))
-                #     # Jump to top of loop and try again
-                #     continue
-            
-                # If not None - result will be a tuple of information
-                laptop_admin_user, student_full_name, \
-                laptop_network_type, laptop_domain_name, laptop_domain_ou = result
+                    student_name = result_msg
+                else:
+                    p("}}ybNo base_dn set; skipping AD validation.}}xx")
             else:
-                laptop_admin_user = RegistrySettings.get_reg_value(value_name="laptop_admin_user", default="")
-                student_full_name = RegistrySettings.get_reg_value(value_name="student_full_name", default="")
-                laptop_network_type = RegistrySettings.get_reg_value(value_name="laptop_network_type", default="")
-                laptop_domain_name = RegistrySettings.get_reg_value(value_name="laptop_domain_name", default="")
-                laptop_domain_ou = RegistrySettings.get_reg_value(value_name="laptop_domain_ou", default="")
+                p("}}ynPlease enter the student's full name:}}xx ", False)
+                student_name = input().strip()
+                if not student_name:
+                    p("}}rbStudent name cannot be empty.}}xx")
+                    continue
 
-            ad_info = laptop_network_type
-            ad_note = ""
+                import secrets
+                student_password = secrets.token_urlsafe(6)
+                util.store_password(student_user, student_password)
 
-            if laptop_network_type == "Domain Member":
-                ad_info = f"{laptop_domain_name}"
+            ad_info = "Domain Joined" if is_domain_joined else "Standalone"
+            student_text = student_user + " (" + student_name + ")"
 
-            # Are we in a domain?
-            if laptop_network_type == "Standalone":
-                # Config says no domain, make sure that is true.
-                if CredentialProcess.COMPUTER_INFO["cs_part_of_domain"] is True:
-                    p("}}rbSystem is joined to an Active Directory Domain!\n" +
-                        "Please remove this from the domain and try again or adjust laptop configuration in SMC.}}xx")
-                    return None
-            else:
-                if not CredentialProcess.COMPUTER_INFO["cs_part_of_domain"] is True:
-                    # Supposed to be in domain but not!?
-                    p("}}rbSystem needs to be joined to an Active Directory Domain!\n" +
-                        "Please add this machine to the }}yb" + laptop_domain_name + "}}rb domain and try again.}}xx")
-                    return None
-                
-                if CredentialProcess.COMPUTER_INFO["cs_domain"].lower() != laptop_domain_name.lower():
-                    # Part of domain, but name doesn't match - wrong domain?
-                    p("}}rbSystem needs to be joined to an Active Directory Domain!\n" +
-                        "Please add this machine to the }}yb" + laptop_domain_name + "}}rb domain and try again.}}xx")
-                    return None
-                
-                ad_note = "}}rbWARNING - Make sure laptop is in the proper OU (" + laptop_domain_ou + ")}}xx"
-        
-                # add active directory student username check here instead of SMC
-            # Verify that the info is correct
             txt = """
 }}mn======================================================================
 }}mn| }}gbFound Student - Continue?                                          }}mn|
@@ -273,30 +204,24 @@ class CredentialProcess:
 }}mn| }}ynSystem Serial Number:  }}cn<bios_serial_number>}}mn|
 }}mn| }}ynDisk Serial Number:    }}cn<disk_serial_number>}}mn|
 }}mn======================================================================}}xx
-<ad_note>
             """
             col_size = 44
             txt = txt.replace("<mgmt_version>", mgmt_version.ljust(col_size))
             txt = txt.replace("<ad_info>", ad_info.ljust(col_size))
-            student_text = student_user + " (" + student_full_name + ")"
             txt = txt.replace("<student_user>", student_text.ljust(col_size))
-            txt = txt.replace("<bios_serial_number>", 
+            txt = txt.replace("<bios_serial_number>",
                 str(CredentialProcess.COMPUTER_INFO['bios_serial_number']).ljust(col_size))
-            txt = txt.replace("<disk_serial_number>", 
+            txt = txt.replace("<disk_serial_number>",
                 str(CredentialProcess.COMPUTER_INFO['disk_boot_drive_serial_number']).ljust(col_size))
-            txt = txt.replace("<ad_note>", ad_note)
 
-            if not credential_config:
-                p(txt)
-                p("}}ybPress Y to continue: }}xx", False)
-                tmp = input()
-                tmp = tmp.strip().lower()
-                if tmp != "y":
-                    p("}}cnCanceled - trying again....}}xx")
-                    continue
+            p(txt)
+            p("}}ybPress Y to continue: }}xx", False)
+            tmp = input()
+            if tmp.strip().lower() != "y":
+                p("}}cnCanceled - trying again....}}xx")
+                continue
 
-                # Show the warning regarding locking down the boot options
-                p("""
+            p("""
 }}mn======================================================================
 }}mn| }}rb====================       WARNING!!!         ==================== }}mn|
 }}mn| }}xxEnsure that the boot from USB or boot from SD card options in      }}mn|
@@ -304,25 +229,25 @@ class CredentialProcess:
 }}mn| }}xxstrong random password.                                            }}mn|
 }}mn======================================================================}}xx
             """)
-                p("}}ybHave you locked down the BIOS? Press Y to continue: }}xx", False)
-                tmp = input()
-                tmp = tmp.strip().lower()
-                if tmp != "y":
-                    p("}}cnCanceled - trying again....}}xx")
-                    continue
+            p("}}ybHave you locked down the BIOS? Press Y to continue: }}xx", False)
+            tmp = input()
+            if tmp.strip().lower() != "y":
+                p("}}cnCanceled - trying again....}}xx")
+                continue
 
-            # - Bounce off SMC - lms/credential_student.json/??
-            result = None
-            
-            (student_full_name, canvas_url, canvas_access_token,
-            student_password, laptop_admin_password) = result
             loop_running = False
 
-        ret = (student_user, student_full_name, student_password, laptop_admin_user,
-            laptop_admin_password, canvas_access_token, canvas_url,
-            laptop_network_type, laptop_domain_name, laptop_domain_ou)
+        return (student_user, student_name, student_password, is_domain_joined)
 
-        return ret
+    @staticmethod
+    def credential_input_verify_loop():
+        """Gather student info either from registry (credential_config) or interactively."""
+        credential_config = RegistrySettings.get_reg_value(value_name="credential_config", default=False)
+
+        if credential_config:
+            return CredentialProcess._get_student_info_from_registry()
+        else:
+            return CredentialProcess._get_student_info_interactive()
 
     @staticmethod
     def credential_laptop():
@@ -367,42 +292,23 @@ class CredentialProcess:
             p("}}rbERROR - Unable to ensure folders are present and permissions are setup properly!}}xx")
             return False
 
-        if RegistrySettings.is_debug():
-            p("}}rbDEBUG MODE ON - Skipping trust_ope_certs policy}}xx")
-        else:
-            CredentialProcess.trust_ope_certs()
-
         # Disable all student accounts
         UserAccounts.disable_student_accounts()
 
         result = CredentialProcess.credential_input_verify_loop()
         if result is None:
-            # Unable to verify?
             return False
-        (student_user, student_name, student_password,
-            canvas_access_token, canvas_url,
-            laptop_network_type, laptop_domain_name, laptop_domain_ou) = result
-        
-        # - Create local student account
-        if laptop_network_type == "Standalone":
+        (student_user, student_name, student_password, is_domain_joined) = result
+
+        if not is_domain_joined:
             p("}}gnCreating local student windows account...}}xx")
             if not UserAccounts.create_local_student_account(student_user, student_name, student_password):
                 p("}}rbError setting up OPE Student Account}}xx\n " + str(student_user))
                 return False
-
         else:
             p("}}gnRunning as domain laptop, skipping create local student windows account...}}xx")
-            # if not UserAccounts.create_local_student_account(student_user, student_name, student_password):
-            #     p("}}rbError setting up OPE Student Account}}xx\n " + str(student_user))
-            #     return False
-            # TODO - Add student account to allowed users to login
 
-        
-
-        # Store the credential information
-        if not RegistrySettings.store_credential_info(canvas_access_token, canvas_url,
-            student_user, student_name,
-            laptop_network_type, laptop_domain_name, laptop_domain_ou):
+        if not RegistrySettings.store_credential_info(student_user, student_name, is_domain_joined):
             p("}}rbError saving registry info!}}xx")
             return False
         
@@ -414,90 +320,29 @@ class CredentialProcess:
             target_path = "%programdata%\\ope\\Services\\lms\\ope_lms.exe",
             description = "Offline LMS app for Open Prison Education project"
         )
-
-        # NOTE - Machine lock_machine run by credential bat file - student account won't be enabled until then.
-        # p("}}gnLocking machine - applying security settings...}}xx")
-        # if not CredentialProcess.lock_machine():
-        #     p("}}rbERROR - Unable to lock machine after credentail!}}xx")
-        #     return False
         
         return True
 
-    @staticmethod
-    def trust_ope_certs():
-        # Download the CA crt and trust it so we don't get warnings/errors when visiting
-        # the sites
-        p("}}gnGetting OPE Cert file...}}xx", log_level=3)
-        # Get the smc_url - pull the ca.crt file from there
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu/")
-        
-        app_path = os.path.dirname(os.path.abspath(__file__))
-        rc_path = os.path.join(app_path, "rc")
-        wget_path = os.path.join(rc_path, "wget.exe")
-        certmgr_path = os.path.join(rc_path, "certmgr.exe")
-        tmp_path = os.path.expandvars("%programdata%\\ope\\tmp")
-        crt_file = os.path.join(tmp_path, "ca.crt")
-        
-        crt_url = smc_url + "/static/certs/ca.crt"
-
-        cmd = "\"" + wget_path + "\" --connect-timeout=6 --tries=3 --no-check-certificate -O \"" + crt_file + "\" " + crt_url
-
-        returncode, output = ProcessManagement.run_cmd(cmd, cwd=tmp_path,
-            require_return_code=0)
-        if returncode == -2:
-            # Error running command?
-            p("}}rbError - unable to pull ca.crt file!}}xx\n" + output)
-            return False
-        p("Ret: " + str(returncode) + " - " + output, log_level=5)
-        
-        # Try to trust the cert
-        cmd = "\"" + certmgr_path + "\" -add \"" + crt_file + "\" -c -s -r localMachine root "
-        returncode, output = ProcessManagement.run_cmd(cmd, cwd=tmp_path,
-            require_return_code=0)
-        if returncode == -2:
-            # Error running command?
-            p("}}rbError - Unable to add ca.crt file into trusted list!}}xx\n" + output)
-            return False
-        p("Ret: " + str(returncode) + " - " + output, log_level=5)
-        
-        return True
-    
     @staticmethod
     def unlock_machine():
-        # Remove security settings from the machine so it can be used by admins to do
-        # maintenance/etc...
         ret = True
 
-        laptop_network_type = CredentialProcess.get_credentialed_network_type()
+        is_domain_joined = CredentialProcess.is_credentialed_domain_joined()
 
-
-        # Make sure mgmt is in the system path
         RegistrySettings.add_mgmt_utility_to_path()
 
-        # Make sure we disable student accounts!
-        # if not UserAccounts.disable_student_accounts():
-        #     p("}}rbUnable to disable student accounts!}}xx")
-        #     return False
-        # Don't disable the account - just remove the OPEStudents group from the logon locally
-        # Doesn't work - gpolicy overwrites it every time it refreshes
-        #UserAccounts.remove_group_from_logon_locally("OPEStudents")
-
-        # Mark machine as not locked
         RegistrySettings.set_machine_locked(False)
 
-        # Log out student accounts!
         if not UserAccounts.log_out_all_students():
             p("}}rbUnable to log out students!}}xx")
             return False
         
-        # Reset group policy
-        if laptop_network_type == "Standalone":
+        if not is_domain_joined:
             GroupPolicy.reset_group_policy_to_default()
         else:
             p("}}ybRunning in Domain Mode, not resetting gpol.}}xx")
 
-        # Reset firewall
-        if laptop_network_type == "Standalone":
+        if not is_domain_joined:
             GroupPolicy.reset_firewall_policy()
         else:
             p("}}ybRunning in Domain Mode, not resetting firewall.}}xx")
@@ -526,101 +371,61 @@ class CredentialProcess:
 
     @staticmethod
     def lock_machine():
-        # Apply secuirty settings and re-enable student account so it can be 
-        # handed back to a student
         ret = True
 
-        # Make sure mgmt is in the system path
         RegistrySettings.add_mgmt_utility_to_path()
 
-        # Get the current credentialed student
         student_user_name = CredentialProcess.get_credentialed_student()
         if student_user_name is None:
             p("}}rbNot Credentiled! - Unable to find credentialed student - not locking machine!}}xx")
             return False
-        
-        # Discontinue use of credentialed admin account
-        # # Get the current admin user name
-        # admin_user_name = CredentialProcess.get_credentialed_admin()
-        # if admin_user_name is None:
-        #     p("}}rbNot Credentiled! - Unable to find credentialed admin account - not locking machine!}}xx")
-        #     return False
-        
-        laptop_network_type = CredentialProcess.get_credentialed_network_type()
 
-        # # Log out the student
-        # if not UserAccounts.log_out_user(student_user_name):
-        #     p("}}rbError - Unable to logout student: " + str(student_user_name) + "}}xx")
-        #     return False
-        # Log out student accounts!
+        is_domain_joined = CredentialProcess.is_credentialed_domain_joined()
+
         if not UserAccounts.log_out_all_students():
             p("}}rbUnable to log out students!}}xx")
             return False
 
-        # Apply firewall rules
-        if laptop_network_type == "Standalone":
+        if not is_domain_joined:
             if not GroupPolicy.apply_firewall_policy():
                 p("}}rbError - Could Not apply firewall policy!\nStudent Account NOT unlocked!}}xx")
                 return False
         else:
             p("}}ybRunning in Domain Mode, not applying firewall policy.}}xx")
 
-        # Apply group policy
         if not GroupPolicy.apply_group_policy():
             p("}}rbError - Could Not apply group policy!\nStudent Account NOT unlocked!}}xx")
             return False
         
-        # Lock down boot options
         if not FolderPermissions.lock_boot_settings():
             p("}}rbError - Could not lock boot settings!\nStudent Account NOT unlocked!}}xx")
             return False
         
-        # Turn off volume shadow copies
         if not FolderPermissions.disable_volume_shadow_copies():
             p("}}rbError - Could not disable VSS settings!\nStudent Account NOT unlocked!}}xx")
             return False
 
-        # Reset registry permissions
         if not RegistrySettings.set_default_ope_registry_permissions(force=True):
             p("}}rbError - Could not reset registry permissions!\nStudent Account NOT unlocked!}}xx")
             return False
 
-        # Reset folder permissions
         if not FolderPermissions.set_default_ope_folder_permissions(force=True):
             p("}}rbError - Could not reset ope folder permissions!\nStudent Account NOT unlocked!}}xx")
             return False
         
-        # Reset student users group memberships
         if not UserAccounts.set_default_groups_for_student(student_user_name):
             p("}}rbError - Could not reset default groups for student!\nStudent Account NOT unlocked!}}xx")
             return False
-        
-        # Discontinue use of credentialed admin account
-        # # Reset admin users group memberships
-        # if not UserAccounts.set_default_groups_for_admin(admin_user_name):
-        #     p("}}rbError - Could not reset default groups for the admin account!\nStudent Account NOT unlocked!}}xx")
-        #     return False
-        
-        # Ensure the OPEService is running
+
         if not CredentialProcess.ensure_opeservice_running():
             p("}}rbError - Verify OPEService is running!\nStudent Account NOT unlocked!}}xx")
             return False
         
-        # Enable student account
-        if laptop_network_type == "Standalone":
+        if not is_domain_joined:
             if not UserAccounts.enable_account(student_user_name):
                 p("}}rbError - Failed to enable student account: " + str(student_user_name) + "}}xx")
                 return False
-        # else:
-        #     # TODO - list student account in allowed users to login
-        #     p("}}ybRunning in Domain Mode, not enabling student account.}}xx")
-        # Use the logon locally attribute to enalble students to login.
-        # Doesn't work - gpolicy overwrites it every time it refreshes
-        # if not UserAccounts.allow_group_to_logon_locally("OPEStudents"):
-        #     p("}}rbError - Unable to enable student account to logon locally! - Student account NOT unlocked!}}xx")
-        #     return False
 
-        # Mark machine as locked
         RegistrySettings.set_machine_locked(True)
 
         return ret
@@ -990,16 +795,8 @@ class CredentialProcess:
     def run_tests():
         p("}}gnRunning Tests...}}xx")
 
-        #UserAccounts.disable_guest_account()
-        #UserAccounts.disable_student_accounts()
-
         p(CredentialProcess.get_mgmt_version())
-        p(CredentialProcess.get_credentialed_network_type())
-        p(CredentialProcess.get_credentialed_domain_name())
-        #RegistrySettings.set_reg_value(value_name="upgrade_started", value=time.time()-9*60)
-        # p("Test")
-        # p(str(RegistrySettings.get_reg_value(value_name="student_user", default=None)))
-        # p(str(RegistrySettings.get_reg_value(app="OPE", value_name="student_user", default=None)))
+        p("is_domain_joined: " + str(CredentialProcess.is_credentialed_domain_joined()))
         pass
 
 

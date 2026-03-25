@@ -307,11 +307,6 @@ valid_commands = {
         "function": UserAccounts.remove_account_profile,
         "help": "Remove the windows profile for this account (e.g. mgmt remove_account_profile s777777)"
     },
-    # Download the OPE CA cert and add to the trusted list
-    "trust_ope_certs": {
-        "function": CredentialProcess.trust_ope_certs,
-        "help": "Download CA crt from the OPE server and add to the trusted list"
-    },
     # Lock the screen for the current user
     "lock_screen": {
         "function": UserAccounts.lock_screen_for_user,

@@ -315,9 +315,9 @@ class CredentialProcess:
         is_domain_joined = self.config.get('is_domain_joined', False)
 
         if is_domain_joined:
-            RegistrySettings.set_reg_value(value_name="is_domian_joined", value=True, value_type="REG_DWORD")
+            RegistrySettings.set_reg_value(value_name="is_domain_joined", value=True, value_type="REG_DWORD")
         else:
-            RegistrySettings.set_reg_value(value_name="is_domian_joined", value=False, value_type="REG_DWORD")
+            RegistrySettings.set_reg_value(value_name="is_domain_joined", value=False, value_type="REG_DWORD")
 
         RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
@@ -375,7 +375,7 @@ class CredentialProcess:
             # update the registry with the new student username
             RegistrySettings.set_reg_value(value_name="student_user", value=student_username, value_type="REG_SZ")
         
-        is_domain_joined = RegistrySettings.get_reg_value(value_name="is_domian_joined", default=False)
+        is_domain_joined = RegistrySettings.get_reg_value(value_name="is_domain_joined", default=False)
         if not is_domain_joined:
             p("}}laptop is not domain joined, skipping student account validation...}}xx")
             return True
