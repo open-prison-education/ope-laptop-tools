@@ -79,6 +79,15 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ---
 
+### `base_dn`
+
+-   **Description**: The LDAP base Distinguished Name used to verify the student account in Active Directory. When `is_domain_joined` is `true`, the script queries Active Directory under this DN to confirm the student username exists. The value follows standard LDAP DN syntax with `OU=` (Organizational Unit) and `DC=` (Domain Component) parts. If is_domain_joined is set to false this could be an empty string otherwise values here will be ignored.
+-   **Acceptable Values**: A valid LDAP distinguished name string.
+-   **Example**: `"OU=Student Users,DC=school,DC=example,DC=org"`
+-   **Required**: Yes
+
+---
+
 ### `student_username`
 
 -   **Description**: The username of the student whose account will be set up on the laptop.
