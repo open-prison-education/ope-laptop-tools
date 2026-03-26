@@ -74,14 +74,14 @@ class CredentialConfig:
     
     def validate(self):
         """Validate required configuration settings"""
-        required_keys = ['install_vc_runtimes', 'have_you_locked_down_the_bios', 'services_path', 'vc_runtimes_script', 'install_service_script']
+        required_keys = ['install_vc_runtimes', 'have_you_locked_down_the_bios', 'services_path', 'vc_runtimes_script', 'install_service_script', 'is_domain_joined', 'base_dn']
         
         for key in required_keys:
             if key not in self.config:
                 p("}}rbERROR: Missing required configuration key: " + key + "}}xx", log_level=1)
                 p("}}rbThe following keys are required:")
                 for key in required_keys:
-                    p("}}yn" + key.replace('_', ' ').title() + "}}xx", log_level=1)
+                    p("}}yn" + key + "}}xx", log_level=1)
                 p("}}rbPlease edit the credential_config.json file and try again.}}xx", log_level=1)
                 return False
         
