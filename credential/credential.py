@@ -340,12 +340,16 @@ class CredentialProcess:
             return True
 
         approved_nics_str = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default=None)
-
-        approved_nics = json.loads(approved_nics_str)
         
+        try:
+            approved_nics = json.loads(approved_nics_str) if approved_nics_str is not None else None
+        except (json.JSONDecodeError, TypeError):
+            approved_nics = None
+
         if not self.is_valid_approved_nics(approved_nics):
             p("}}gnNo approved NICs found or invalid format, configuring NICs...}}xx")
-            RegistrySettings.remove_reg_value(app="OPEService", value_name="approved_nics")
+            if approved_nics_str is not None:
+                RegistrySettings.remove_reg_value(app="OPEService", value_name="approved_nics")
             NetworkDevices.configure_nics()
         else:
             p("}}gnApproved NICs: " + approved_nics_str + "}}xx")
@@ -377,7 +381,7 @@ class CredentialProcess:
         
         is_domain_joined = RegistrySettings.get_reg_value(value_name="is_domain_joined", default=False)
         if not is_domain_joined:
-            p("}}laptop is not domain joined, skipping student account validation...}}xx")
+            p("}}ynlaptop is not domain joined, skipping student account validation...}}xx")
             return True
 
         base_dn = RegistrySettings.get_reg_value(value_name="base_dn", default="")

@@ -101,7 +101,7 @@ This file contains all the settings for the credentialing process. Below is a de
 - **Description**: A JSON-encoded string representing a list of approved network adapters and their allowed IP subnets.
 - **Acceptable Values**: A valid JSON string that decodes to a list of lists, each containing a network card name and its associated allowed subnet in CIDR notation. Subnet can be partial.
 - **Example**: `[[ \"nic_name #1\", \"subnet #1\" ], [ \"nic_name #2\", \"subnet #2\" ]]`
-- **Required**: No (If that is empty, you will be prompted.)
+- **Required**: No (If that is empty, you will be prompted if registry value for approved nics doesn't exist already.)
 
 ---
 
