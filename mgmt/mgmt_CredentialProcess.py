@@ -129,6 +129,7 @@ class CredentialProcess:
         if not is_domain_joined:
             import secrets
             student_password = secrets.token_urlsafe(6)
+            p("}}ynGenerated password for " + student_user + ": }}cb" + student_password + "}}xx")
             util.store_password(student_user, student_password)
 
         return (student_user, student_name, student_password, is_domain_joined)
@@ -302,7 +303,8 @@ class CredentialProcess:
 
         if not is_domain_joined:
             p("}}gnCreating local student windows account...}}xx")
-            if not UserAccounts.create_local_student_account(student_user, student_name, student_password):
+            # student_name is the same as student_user for standalone mode (not domain joined)
+            if not UserAccounts.create_local_student_account(student_user, student_user, student_password):
                 p("}}rbError setting up OPE Student Account}}xx\n " + str(student_user))
                 return False
         else:
@@ -351,6 +353,11 @@ class CredentialProcess:
 
     @staticmethod
     def ensure_opeservice_running():
+        
+        if RegistrySettings.is_debug():
+            p("}}ynDEBUG MODE ON - Skipping ensure OPEService is running}}xx")
+            return True
+        
         ret = False
 
         w = Computer.get_wmi_connection()

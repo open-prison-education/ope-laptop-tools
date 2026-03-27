@@ -558,7 +558,6 @@ class UserAccounts:
         if user_name is None or full_name is None or password is None:
             p("}}rbError - Invalid parameters to create new student user!}}xx", debug_level=1)
             return False
-
         # Create local student account
         try:
             p("}}yn\tAdding student account (" + user_name + ")...}}xx")
@@ -919,7 +918,7 @@ class UserAccounts:
         ret = True
         # Get a list of accounts that are in the students group
         
-        p("}}cb-- Disabling local student accounts in " + str(UserAccounts.STUDENTS_GROUP) + " group...}}xx")
+        p("}}gnDisabling local student accounts in " + str(UserAccounts.STUDENTS_GROUP) + " group...}}xx")
         try:
             grp = accounts.local_group(UserAccounts.STUDENTS_GROUP)
         except winsys.exc.x_not_found as ex:
