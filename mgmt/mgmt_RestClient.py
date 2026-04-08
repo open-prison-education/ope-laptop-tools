@@ -275,6 +275,21 @@ class RestClient:
 
         return True
 
+    @staticmethod
+    def validate_smc_credentials(smc_url, admin_user, admin_pw):
+        """Make an authenticated call to SMC to verify admin credentials are accepted.
+        Uses the verify_ope_account endpoint with a dummy user -- any JSON response
+        (even 'Invalid User!') means credentials are valid. A None return from
+        send_rest_call (403 Forbidden / connection error) means they are rejected."""
+        json_response = RestClient.send_rest_call(
+            server=smc_url,
+            api_endpoint="lms/verify_ope_account_in_smc.json/_test",
+            auth_user=admin_user,
+            auth_password=admin_pw,
+            timeout=10,
+        )
+        return json_response is not None
+
 if __name__ == "__main__":
     # Run Tests
     r = RestClient.ping_smc("https://bad_url.com")

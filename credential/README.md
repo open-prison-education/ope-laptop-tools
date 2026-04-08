@@ -132,6 +132,23 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ---
 
+### `smc_url`
+
+-   **Description**: Optional. The URL for the Student Management Console (SMC). When set (along with `smc_admin_username`), the credential process will fetch Canvas student access tokens from SMC during credentialing. If empty, SMC integration is skipped entirely.
+-   **Acceptable Values**: A valid HTTPS URL string, or `""` to disable.
+-   **Example**: `"https://smc.corrections.sbctc.edu"`
+-   **Required**: No
+
+---
+
+### `smc_admin_username`
+
+-   **Description**: Optional. The SMC admin username used for authenticated API calls. Required if `smc_url` is set. The corresponding password is stored securely in the Windows Credential Vault on first run (you will be prompted if no stored password is found).
+-   **Acceptable Values**: A valid SMC admin username string, or `""` to disable.
+-   **Required**: No (required if `smc_url` is set)
+
+---
+
 ### `debug`
 
 -   **Description**: Enables or disables debug mode. When `"on"`, the script will:
@@ -149,6 +166,7 @@ This file contains all the settings for the credentialing process. Below is a de
 - `debug="on"` sets the working directory to the project root, runs `mgmt` via Python, skips service installation, and bypasses the confirmation prompt.
 - When not in debug mode the script expects `mgmt.exe` to exist under `services_path\mgmt\mgmt.exe`; missing files raise errors and halt the process.
 - Registry values written by the script (`is_domain_joined`, `student_user`, `debug`, etc.) feed the downstream `mgmt` credential flow.
+- When `smc_url` and `smc_admin_username` are configured, the credential process validates SMC connectivity and admin credentials early in the pipeline. During the `mgmt credential_laptop` step, the system will also fetch Canvas student access tokens from SMC and store them in the registry.
 
 ### Error Handling
 

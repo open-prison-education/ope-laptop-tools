@@ -354,7 +354,8 @@ class RegistrySettings:
         return True
 
     @staticmethod
-    def store_credential_info(student_user, student_name, is_domain_joined):
+    def store_credential_info(student_user, student_name, is_domain_joined,
+                              canvas_access_token="", canvas_url=""):
         RegistrySettings.set_reg_value(app="", value_name="student_user", value=student_user,
             value_type="REG_SZ")
         RegistrySettings.set_reg_value(app="OPELMS\\student", value_name="user_name",
@@ -365,6 +366,15 @@ class RegistrySettings:
 
         RegistrySettings.set_reg_value(value_name="is_domain_joined",
             value=1 if is_domain_joined else 0, value_type="REG_DWORD")
+
+        if canvas_access_token:
+            for app_path in ("", "OPELMS\\student"):
+                RegistrySettings.set_reg_value(app=app_path, value_name="canvas_access_token",
+                    value=canvas_access_token, value_type="REG_SZ")
+        if canvas_url:
+            for app_path in ("", "OPELMS\\student"):
+                RegistrySettings.set_reg_value(app=app_path, value_name="canvas_url",
+                    value=canvas_url, value_type="REG_SZ")
 
         return True
 

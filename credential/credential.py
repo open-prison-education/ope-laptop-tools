@@ -3,6 +3,7 @@ OPE Credential Process
 Configures a laptop for student use by installing services, credentialing, and locking down security.
 """
 
+import getpass
 import os
 import sys
 import json
@@ -17,6 +18,7 @@ from common.color import p
 from common import util
 from mgmt.mgmt_EventLog import EventLog
 from mgmt.mgmt_RegistrySettings import RegistrySettings
+from mgmt.mgmt_RestClient import RestClient
 from mgmt.mgmt_SystemTime import SystemTime
 from mgmt.mgmt_NetworkDevices import NetworkDevices
 
@@ -323,6 +325,12 @@ class CredentialProcess:
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="base_dn", value=base_dn, value_type="REG_SZ")
 
+        smc_url = self.config.get('smc_url', '')
+        smc_admin_username = self.config.get('smc_admin_username', '')
+        if smc_url and smc_admin_username:
+            RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
+            RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_username, value_type="REG_SZ")
+
         p("}}gb-- Configuration stored in the registry...}}xx")
 
         return True
@@ -364,8 +372,40 @@ class CredentialProcess:
         
         return True
 
+    def validate_and_store_smc_credentials(self):
+        """Validate SMC connectivity and admin credentials when smc_url is configured.
+        Stores the admin password in the credential vault only after successful validation.
+        Returns True if SMC is not configured (skip) or validation passes."""
+        smc_url = self.config.get('smc_url', '')
+        smc_admin_username = self.config.get('smc_admin_username', '')
+
+        if not smc_url or not smc_admin_username:
+            return True
+
+        p("}}gb-- Validating SMC connectivity and credentials...}}xx")
+
+        if not RestClient.ping_smc(smc_url):
+            p("}}rbERROR: Unable to reach SMC at " + smc_url + " -- check the URL and network.}}xx", log_level=1)
+            return False
+
+        smc_admin_password = util.get_password(smc_admin_username)
+        if not smc_admin_password:
+            p("}}ynNo stored password found for SMC admin '" + smc_admin_username + "'.}}xx")
+            smc_admin_password = getpass.getpass("Enter SMC admin password: ")
+            if not smc_admin_password:
+                p("}}rbERROR: SMC admin password cannot be empty.}}xx", log_level=1)
+                return False
+
+        if not RestClient.validate_smc_credentials(smc_url, smc_admin_username, smc_admin_password):
+            p("}}rbERROR: SMC rejected the admin credentials -- check username/password and try again.}}xx", log_level=1)
+            return False
+
+        util.store_password(smc_admin_username, smc_admin_password)
+        p("}}gnSMC credentials validated and stored successfully.}}xx")
+        return True
+
     def validate_and_store_student_account(self):
-        """Validate student account exists in SMC and get account details"""
+        """Validate student account exists in Active Directory and get account details"""
         p("}}gb-- Validating and storing student account...}}xx")
         student_username = RegistrySettings.get_reg_value(value_name="student_user", default="")
 
@@ -418,11 +458,12 @@ class CredentialProcess:
                 p("}}rbERROR: " + key + " must be a string value (check credential_config.json).}}xx", log_level=1)
                 return False
 
-        # student_username is optional, but if it exists, it must be a string. None is also acceptable.
-        student_username = self.config.get('student_username')
-        if student_username is not None and not isinstance(student_username, str):
-            p("}}rbERROR: student_username must be a string value (check credential_config.json).}}xx", log_level=1)
-            return False
+        optional_string_keys = ['student_username', 'smc_url', 'smc_admin_username']
+        for key in optional_string_keys:
+            val = self.config.get(key)
+            if val is not None and not isinstance(val, str):
+                p("}}rbERROR: " + key + " must be a string value (check credential_config.json).}}xx", log_level=1)
+                return False
 
         approved_nics_str = self.config.get('approved_nics', '')
         if approved_nics_str != "" and approved_nics_str != "[]":
@@ -458,7 +499,7 @@ class CredentialProcess:
 
         self.store_config_in_registry()
         
-        initial_checks = (self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
+        initial_checks = (self.validate_and_store_smc_credentials, self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
         for check in initial_checks:
             if not check():
                 p("}}rbInitial check failed: " + check.__name__ + "}}xx", log_level=1)

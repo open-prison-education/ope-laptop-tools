@@ -132,6 +132,8 @@ class CredentialProcess:
             p("}}ynGenerated password for " + student_user + ": }}cb" + student_password + "}}xx")
             util.store_password(student_user, student_password)
 
+        CredentialProcess._fetch_canvas_token_from_smc(student_user)
+
         return (student_user, student_name, student_password, is_domain_joined)
 
     @staticmethod
@@ -238,7 +240,46 @@ class CredentialProcess:
 
             loop_running = False
 
+        CredentialProcess._fetch_canvas_token_from_smc(student_user)
+
         return (student_user, student_name, student_password, is_domain_joined)
+
+    @staticmethod
+    def _fetch_canvas_token_from_smc(student_user):
+        """If smc_url is configured, call credential_student_in_smc to obtain canvas tokens
+        and store them in the registry. Skips silently when SMC is not configured."""
+        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="")
+        if not smc_url:
+            return
+
+        smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="")
+        smc_admin_password = util.get_password(smc_admin_user) if smc_admin_user else ""
+
+        if not smc_admin_user or not smc_admin_password:
+            p("}}ybSMC URL is configured but admin credentials are missing -- skipping canvas token fetch.}}xx")
+            return
+
+        p("}}gnFetching canvas token from SMC...}}xx")
+        ex_info = CredentialProcess.COMPUTER_INFO
+        result = RestClient.credential_student_in_smc(
+            student_user, smc_url, smc_admin_user, smc_admin_password, ex_info
+        )
+
+        if result is None:
+            p("}}ybWARNING: Unable to fetch canvas token from SMC -- continuing without it.}}xx")
+            return
+
+        (student_full_name, canvas_url, canvas_access_token,
+            student_password_from_smc, laptop_admin_password) = result
+
+        RegistrySettings.store_credential_info(
+            student_user=student_user,
+            student_name=student_full_name,
+            is_domain_joined=bool(RegistrySettings.get_reg_value(value_name="is_domain_joined", default=0)),
+            canvas_access_token=canvas_access_token,
+            canvas_url=canvas_url,
+        )
+        p("}}gnCanvas token stored successfully.}}xx")
 
     @staticmethod
     def credential_input_verify_loop():

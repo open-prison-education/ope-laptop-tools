@@ -31,7 +31,7 @@ The main credentialing application that automates the full student laptop setup 
 1. Verifies BIOS lockdown status
 2. Confirms administrative privileges
 3. Caches configuration data in registry
-4. Pulls SMC configuration and validates student account
+4. Validates student account (optionally fetches Canvas tokens from SMC when configured)
 5. Syncs network interface and time settings
 6. Orchestrates `mgmt.exe` commands to:
    - Unlock the machine
@@ -155,7 +155,7 @@ A utility for capturing screenshots of the student's desktop for monitoring purp
 
 3. **Configure credential application:**
    - Edit `credential/credential_config.json`
-   - Set SMC URL, admin username, and other required settings
+   - Set required settings (optionally set `smc_url` and `smc_admin_username` for Canvas token integration)
    - See [credential/README.md](credential/README.md) for configuration details
 
 4. **Run credentialing process:**
@@ -313,7 +313,7 @@ Where level is typically 1-5 (higher = more verbose).
 ### Credentialing Fails
 - Verify BIOS is locked down (set `have_you_locked_down_the_bios: true`)
 - Ensure running as Administrator
-- Check SMC connectivity and credentials
+- If SMC is configured, check SMC connectivity and credentials
 - Review `ope-credential.log` for detailed error messages
 
 ### Network Issues
