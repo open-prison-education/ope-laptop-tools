@@ -79,15 +79,8 @@ class SystemTime:
             p("}}rnERROR - Unable to update w32tm config!}}xx")
             #errors = True
         
-        p_state("Syncing with NTP servers...", title="NTP Update", kill_logon=False)
-
+        p("}}gnSyncing with NTP servers...}}xx")
         RegistrySettings.set_reg_value(value_name="last_ntp_sync", value=time.time())
-
-
-        # Pull the current time from the SMC server and set it locally.
-        # HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers
-        # w32tm /stripchart /computer:smc.ed /dataonly /samples:5
-        # w32tm /query /peers
 
         try:
             # Make sure the time service is running

@@ -233,8 +233,7 @@ class CredentialProcess:
     
     def unlock_machine(self):
         """Unlock machine to disable security settings for credential process"""
-        p("}}gb-- Unlocking Machine - please wait...}}xx")
-        p("")
+        p("}}gb-- Unlocking Machine...}}xx")
         
         mgmt_exe = self.get_mgmt_exe_path()
         if not mgmt_exe:
