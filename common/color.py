@@ -1,12 +1,6 @@
 import os
 import psutil
-#import logging
-# Resolve the same EventLog class as mgmt.py (flat mgmt_EventLog vs package mgmt.mgmt_EventLog) so
-# get_current_instance() sees the singleton mgmt/credential/OPEService already created.
-try:
-    from mgmt_EventLog import EventLog
-except ImportError:
-    from mgmt.mgmt_EventLog import EventLog
+from mgmt.mgmt_EventLog import EventLog
 
 global LOGGER
 LOGGER = None  # Filled from EventLog.get_current_instance() on first p(); stays None if no app logger exists
