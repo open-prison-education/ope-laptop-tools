@@ -150,7 +150,7 @@ class CredentialProcess:
             p("}}rbERROR: Failed to check admin privileges: " + str(ex) + "}}xx", log_level=1)
             return False
     
-    def run_command(self, cmd, error_msg=None, critical=False):
+    def run_command(self, cmd, error_msg=None, critical=False, mgmt_log_to_credential=False):
         """
         Run a command and check return code
         
@@ -158,6 +158,8 @@ class CredentialProcess:
             cmd: Command to run
             error_msg: Error message to display on failure
             critical: If True, exit with EXIT_CRITICAL on failure
+            mgmt_log_to_credential: If True, child mgmt process logs to ope-credential.log
+                (via OPE_MGMT_LOG_FILE) instead of ope-mgmt.log.
             
         Returns:
             True on success, False on failure
@@ -171,7 +173,12 @@ class CredentialProcess:
             p("}}gnWorking directory is set to: " + cwd + "}}xx", log_level=4)
 
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=False, cwd=cwd)    
+            env = None
+            if mgmt_log_to_credential:
+                env = os.environ.copy()
+                env["OPE_MGMT_LOG_FILE"] = os.path.abspath(os.path.expandvars(lf))
+
+            result = subprocess.run(cmd, shell=True, capture_output=False, cwd=cwd, env=env)
             if result.returncode != 0:
                 if error_msg:
                     p("}}rb" + error_msg + "}}xx", log_level=1)
@@ -236,7 +243,8 @@ class CredentialProcess:
         return self.run_command(
             f'{mgmt_exe} unlock_machine',
             error_msg="*** ERROR - Failed to unlock machine - Quitting. ***",
-            critical=True
+            critical=True,
+            mgmt_log_to_credential=True,
         )
     
     def install_services(self):
@@ -270,7 +278,8 @@ class CredentialProcess:
         return self.run_command(
             f'{mgmt_exe} credential_laptop',
             error_msg="****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******",
-            critical=True
+            critical=True,
+            mgmt_log_to_credential=True,
         )
     
     def lock_machine(self):
@@ -284,7 +293,8 @@ class CredentialProcess:
         return self.run_command(
             f'{mgmt_exe} lock_machine',
             error_msg="****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. Try mgmt lock_machine again to see if you can lock it manually. *******",
-            critical=True
+            critical=True,
+            mgmt_log_to_credential=True,
         )
     
     def display_completion(self):
