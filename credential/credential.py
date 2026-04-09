@@ -117,7 +117,7 @@ class CredentialProcess:
         for key, value in self.config.items():
             p("}}yn" + key.replace('_', ' ').title() + ": }}cn" + str(value) + "}}xx")
         
-        p("}}gb=================================}}xx\n")
+        p("}}gb=================================}}xx")
 
         if self.config.get('debug', 'off').lower() == "on":
             return True

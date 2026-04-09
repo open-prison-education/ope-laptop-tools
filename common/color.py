@@ -1,11 +1,15 @@
 import os
-import common.util
 import psutil
 #import logging
-from mgmt.mgmt_EventLog import EventLog
+# Resolve the same EventLog class as mgmt.py (flat mgmt_EventLog vs package mgmt.mgmt_EventLog) so
+# get_current_instance() sees the singleton mgmt/credential/OPEService already created.
+try:
+    from mgmt_EventLog import EventLog
+except ImportError:
+    from mgmt.mgmt_EventLog import EventLog
 
 global LOGGER
-LOGGER = None  # Grab it later - give it a chance to get initialized
+LOGGER = None  # Filled from EventLog.get_current_instance() on first p(); stays None if no app logger exists
 
 import re
 import sys
@@ -26,16 +30,10 @@ def get_log_level():
     return LOG_LEVEL
 
 def init_logger():
+    """Attach to the app's EventLog singleton if one exists; no logger is created here."""
     global LOGGER
     if LOGGER is None:
         LOGGER = EventLog.get_current_instance()
-        if LOGGER is None:
-            # Make default logger
-            LOGGER = EventLog(os.path.join(common.util.LOG_FOLDER, 'ope-mgmt.log'), service_name="OPE")
-        # if LOGGER is None:
-        #     print("Unable to get logger instance!")
-        # else:
-        #     print("Logger: " + str(LOGGER.log_file))
 
 
 CSI = "\x1b["
