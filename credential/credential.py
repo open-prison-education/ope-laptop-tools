@@ -334,8 +334,8 @@ class CredentialProcess:
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="base_dn", value=base_dn, value_type="REG_SZ")
 
-        smc_url = self.config.get('smc_url', '')
-        smc_admin_username = self.config.get('smc_admin_username', '')
+        smc_url = (self.config.get('smc_url') or '').strip()
+        smc_admin_username = (self.config.get('smc_admin_username') or '').strip()
         if smc_url and smc_admin_username:
             RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
             RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_username, value_type="REG_SZ")
@@ -397,19 +397,23 @@ class CredentialProcess:
             p("}}rbERROR: Unable to reach SMC at " + smc_url + " -- check the URL and network.}}xx", log_level=1)
             return False
 
-        smc_admin_password = util.get_password(smc_admin_username)
+        smc_admin_password = util.get_smc_password(smc_admin_username)
         if not smc_admin_password:
-            p("}}ynNo stored password found for SMC admin '" + smc_admin_username + "'.}}xx")
+            p("}}ynNo stored SMC admin password found for '" + smc_admin_username + "'.}}xx")
             smc_admin_password = getpass.getpass("Enter SMC admin password: ")
-            if not smc_admin_password:
-                p("}}rbERROR: SMC admin password cannot be empty.}}xx", log_level=1)
-                return False
+            while not RestClient.validate_smc_credentials(smc_url, smc_admin_username, smc_admin_password):
+                p("}}rbERROR: SMC rejected the admin credentials -- check username/password and try again.}}xx", log_level=1)
+                smc_admin_password = getpass.getpass("Enter SMC admin password: ")
 
-        if not RestClient.validate_smc_credentials(smc_url, smc_admin_username, smc_admin_password):
+            util.store_smc_password(smc_admin_username, smc_admin_password)
+            p("}}gnSMC credentials validated and stored successfully.}}xx")
+            return True
+
+        while not RestClient.validate_smc_credentials(smc_url, smc_admin_username, smc_admin_password):
             p("}}rbERROR: SMC rejected the admin credentials -- check username/password and try again.}}xx", log_level=1)
-            return False
+            smc_admin_password = getpass.getpass("Enter SMC admin password: ")
 
-        util.store_password(smc_admin_username, smc_admin_password)
+        util.store_smc_password(smc_admin_username, smc_admin_password)
         p("}}gnSMC credentials validated and stored successfully.}}xx")
         return True
 
@@ -473,6 +477,13 @@ class CredentialProcess:
             if val is not None and not isinstance(val, str):
                 p("}}rbERROR: " + key + " must be a string value (check credential_config.json).}}xx", log_level=1)
                 return False
+
+        smc_url = (self.config.get('smc_url') or '').strip()
+        smc_admin_username = (self.config.get('smc_admin_username') or '').strip()
+        if bool(smc_url) != bool(smc_admin_username):
+            p("}}rbERROR: smc_url and smc_admin_username must both be non-empty or both empty — "
+              "set both for SMC/Canvas token integration, or clear both to skip.}}xx", log_level=1)
+            return False
 
         approved_nics_str = self.config.get('approved_nics', '')
         if approved_nics_str != "" and approved_nics_str != "[]":

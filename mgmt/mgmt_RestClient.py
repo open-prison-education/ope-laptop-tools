@@ -166,7 +166,7 @@ class RestClient:
             if "unable to connect to canvas db" in msg:
                 p("\n}}rbSMC Unable to connect to Canvas DB - make sure canvas app is running and\n" +
                 "the SMC tool is configured to talk to Canvas}}xx")
-                p("}}yn" + str(msg) + "}}xx")
+                p("}}rb" + str(msg) + "}}xx")
                 return None
             if "Unable to find user in canvas:" in  msg:
                 p("\n}}rbInvalid User!}}xx")
@@ -261,7 +261,7 @@ class RestClient:
     def ping_smc(smc_url):
 
         json_response = RestClient.send_rest_call(server=smc_url,
-            api_endpoint="lms/ping.json", timeout=3, log_level=5
+            api_endpoint="lms/ping.json", timeout=5, log_level=5
             )
 
         if json_response is None:

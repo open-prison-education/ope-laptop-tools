@@ -130,7 +130,6 @@ class CredentialProcess:
             import secrets
             student_password = secrets.token_urlsafe(6)
             p("}}ynGenerated password for " + student_user + ": }}cb" + student_password + "}}xx")
-            util.store_password(student_user, student_password)
 
         CredentialProcess._fetch_canvas_token_from_smc(student_user)
 
@@ -193,7 +192,7 @@ class CredentialProcess:
 
                 import secrets
                 student_password = secrets.token_urlsafe(6)
-                util.store_password(student_user, student_password)
+                p("}}ynGenerated password for " + student_user + ": }}cb" + student_password + "}}xx")
 
             ad_info = "Domain Joined" if is_domain_joined else "Standalone"
             student_text = student_user + " (" + student_name + ")"
@@ -253,7 +252,7 @@ class CredentialProcess:
             return
 
         smc_admin_user = RegistrySettings.get_reg_value(value_name="smc_admin_user", default="")
-        smc_admin_password = util.get_password(smc_admin_user) if smc_admin_user else ""
+        smc_admin_password = util.get_smc_password(smc_admin_user) if smc_admin_user else ""
 
         if not smc_admin_user or not smc_admin_password:
             p("}}ybSMC URL is configured but admin credentials are missing -- skipping canvas token fetch.}}xx")

@@ -134,18 +134,18 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ### `smc_url`
 
--   **Description**: Optional. The URL for the Student Management Console (SMC). When set (along with `smc_admin_username`), the credential process will fetch Canvas student access tokens from SMC during credentialing. If empty, SMC integration is skipped entirely.
+-   **Description**: Optional. The URL for the Student Management Console (SMC). When set (along with `smc_admin_username`), the credential process will fetch Canvas student access tokens from SMC during credentialing. If both are empty, SMC integration is skipped entirely.
 -   **Acceptable Values**: A valid HTTPS URL string, or `""` to disable.
 -   **Example**: `"https://smc.corrections.sbctc.edu"`
--   **Required**: No
+-   **Required**: No (required if `smc_admin_username` is non-empty; whitespace-only counts as empty)
 
 ---
 
 ### `smc_admin_username`
 
--   **Description**: Optional. The SMC admin username used for authenticated API calls. Required if `smc_url` is set. The corresponding password is stored securely in the Windows Credential Vault on first run (you will be prompted if no stored password is found).
+-   **Description**: Optional. The SMC admin username used for authenticated API calls. Required if `smc_url` is non-empty. The corresponding password is stored securely in the Windows Credential Vault on first run (you will be prompted if no stored password is found).
 -   **Acceptable Values**: A valid SMC admin username string, or `""` to disable.
--   **Required**: No (required if `smc_url` is set)
+-   **Required**: No (required if `smc_url` is non-empty; whitespace-only counts as empty)
 
 ---
 

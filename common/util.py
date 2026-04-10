@@ -96,12 +96,12 @@ def get_param(param_index=1, default_value="", only_for=None):
     
     return ret
 
-def store_password(username, password):
-    """Store password in the credential vault"""
+def store_smc_password(username, password):
+    """Store SMC admin password in the credential vault"""
     from common.color import p
     
     credential_data = {
-        "TargetName": f"{username}",
+        "TargetName": f"SMC_{username}",
         "Type": win32cred.CRED_TYPE_GENERIC,
         "UserName": username,
         "CredentialBlob": password,
@@ -110,21 +110,21 @@ def store_password(username, password):
 
     try:
         win32cred.CredWrite(credential_data, 0)
-        p("}}gnPassword stored in the credential vault successfully}}xx", log_level=3)
+        p("}}gnSMC admin password stored in the credential vault successfully}}xx", log_level=3)
         return True
     except Exception as ex:
-        p("}}rbERROR: Failed to store password in the credential vault: " + str(ex) + "}}xx", log_level=1)
+        p("}}rbERROR: Failed to store SMC admin password in the credential vault: " + str(ex) + "}}xx", log_level=1)
         return False
 
-def get_password(username):
-    """Get password from the credential vault"""
+def get_smc_password(username):
+    """Get SMC admin password from the credential vault"""
     from common.color import p
     
     try:
-        credential_data = win32cred.CredRead(f"{username}", win32cred.CRED_TYPE_GENERIC)
+        credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
         return credential_data["CredentialBlob"].decode('utf-16le')
     except Exception as ex:
-        p("}}ynNo password found for " + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
+        p("}}ynNo SMC admin password found for " + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
         return None
 
 
