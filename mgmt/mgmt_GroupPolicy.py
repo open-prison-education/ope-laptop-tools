@@ -75,7 +75,7 @@ class GroupPolicy:
             value_name="laptop_network_type", default="Standalone", value_type="REG_SZ")
 
         if RegistrySettings.is_debug():
-            p("}}ynDEBUG MODE ON - Skipping apply group policy}}xx")
+            p("}}rbDEBUG MODE ON - Skipping apply group policy}}xx")
             return True
         
         # Lock out browser games
@@ -242,7 +242,7 @@ class GroupPolicy:
     def apply_firewall_policy():
         ret = True
         if RegistrySettings.is_debug():
-            p("}}ynDEBUG MODE ON - Skipping apply firewall policy}}xx")
+            p("}}rbDEBUG MODE ON - Skipping apply firewall policy}}xx")
             return True
 
         if Computer.is_domain_joined() == True:
@@ -275,7 +275,7 @@ class GroupPolicy:
     def reset_firewall_policy():
         ret = True
         if RegistrySettings.is_debug():
-            p("}}ynDEBUG MODE ON - Skipping reset firewall policy}}xx")
+            p("}}rbDEBUG MODE ON - Skipping reset firewall policy}}xx")
             return True
 
         if Computer.is_domain_joined() == True:

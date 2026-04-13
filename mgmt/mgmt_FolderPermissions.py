@@ -553,7 +553,7 @@ class FolderPermissions:
         ret = True
 
         if RegistrySettings.is_debug():
-            p("}}ynDEBUG MODE ON - Skipping lock_boot_settings policy}}xx")
+            p("}}rbDEBUG MODE ON - Skipping lock_boot_settings policy}}xx")
             return True
 
         # Make sure bootim.exe is disabled (the blue screen menu) This will block recovery options
@@ -940,7 +940,7 @@ class FolderPermissions:
         ret = True
 
         if RegistrySettings.is_debug():
-            p("}}ynDEBUG MODE ON - Skipping unlock_boot_settings}}xx")
+            p("}}rbDEBUG MODE ON - Skipping unlock_boot_settings}}xx")
             return True
 
         # Unblock bootim (recovery screen stuff)
@@ -1009,7 +1009,7 @@ class FolderPermissions:
     @staticmethod
     def disable_volume_shadow_copies():
         if RegistrySettings.is_debug():
-            p("}}ynDEBUG MODE ON - Skipping disable volume shadow copies}}xx")
+            p("}}rbDEBUG MODE ON - Skipping disable volume shadow copies}}xx")
             return True
         
         # Make sure SAM isn't readable: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-36934

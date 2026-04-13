@@ -1,23 +1,43 @@
+# import pythoncom
+# import win32serviceutil
+# import win32service
+# import win32event
+# import servicemanager
+# import socket
+# import time
+# import datetime
+# import sys
+# import os
+# import logging
+# import random
+# # from win32com.shell import shell, shellcon
+# import ntsecuritycon
+# import win32security
+# import win32gui
+# import win32ui
+# import win32con
+# import win32gui_struct
+# import win32ts
+# import win32process
+# import win32profile
+# import ctypes
+# import wmi
+# import traceback
 import os
 
 # Required imports - helps nuitka
 import simplejson
 
 import win32trace
+import win32api
+import traceback
 
 from common import util
 
 # Pull in logger first and set it up!
 from mgmt_EventLog import EventLog
 global LOGGER
-# When credential.py (or another parent) spawns mgmt, it sets OPE_MGMT_LOG_FILE so logs
-# go to that file; direct mgmt runs use ope-mgmt.log.
-_mgmt_log_override = (os.environ.get("OPE_MGMT_LOG_FILE") or "").strip()
-if _mgmt_log_override:
-    _mgmt_log_path = os.path.expandvars(_mgmt_log_override)
-else:
-    _mgmt_log_path = os.path.join(util.LOG_FOLDER, "ope-mgmt.log")
-LOGGER = EventLog(_mgmt_log_path, service_name="OPEMgmt")
+LOGGER = EventLog(os.path.join(util.LOG_FOLDER, 'ope-mgmt.log'), service_name="OPEMgmt")
 
 from common.color import p, set_log_level
 
@@ -286,6 +306,11 @@ valid_commands = {
     "remove_account_profile": {
         "function": UserAccounts.remove_account_profile,
         "help": "Remove the windows profile for this account (e.g. mgmt remove_account_profile s777777)"
+    },
+    # Download the OPE CA cert and add to the trusted list
+    "trust_ope_certs": {
+        "function": CredentialProcess.trust_ope_certs,
+        "help": "Download CA crt from the OPE server and add to the trusted list"
     },
     # Lock the screen for the current user
     "lock_screen": {

@@ -31,7 +31,7 @@ class EventLog:
         if EventLog._OPE_STATE_LOG_INSTANCE is None:
             # Make the state logger and set it up.
             # NOTE - this is to log to the background of the OPE laptops
-            lf = os.path.join(util.LOG_FOLDER, "ope-state.log")
+            lf = os.path.join(util.LOG_FOLDER, 'ope-state.log')  #"%programdata%\ope\tmp\log\ope-state.log"
             l = logging.getLogger("OPE_STATE")
             l.setLevel(logging.DEBUG)
 
