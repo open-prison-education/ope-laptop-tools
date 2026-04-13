@@ -79,21 +79,8 @@ class SystemTime:
             p("}}rnERROR - Unable to update w32tm config!}}xx")
             #errors = True
         
-        p_state("Syncing with NTP servers...", title="NTP Update", kill_logon=False)
-
+        p("}}gnSyncing with NTP servers...}}xx")
         RegistrySettings.set_reg_value(value_name="last_ntp_sync", value=time.time())
-        
-        smc_url = RegistrySettings.get_reg_value(value_name="smc_url", default="https://smc.corrections.sbctc.edu")
-        smc_host = smc_url.lower().replace("https://", "").replace("http://", "").replace("/", "")
-        if ":" in smc_host:
-            # port :8000 - remove it
-            pos = smc_host.index(":")
-            smc_host = smc_host[:pos]
-
-        # Pull the current time from the SMC server and set it locally.
-        # HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers
-        # w32tm /stripchart /computer:smc.ed /dataonly /samples:5
-        # w32tm /query /peers
 
         try:
             # Make sure the time service is running

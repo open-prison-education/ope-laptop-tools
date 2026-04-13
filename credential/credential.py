@@ -3,12 +3,12 @@ OPE Credential Process
 Configures a laptop for student use by installing services, credentialing, and locking down security.
 """
 
+import getpass
 import os
 import sys
 import json
 import subprocess
 import ctypes
-import getpass
 
 # Add parent directory to path so we can import common and mgmt modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -76,14 +76,14 @@ class CredentialConfig:
     
     def validate(self):
         """Validate required configuration settings"""
-        required_keys = ['install_vc_runtimes', 'have_you_locked_down_the_bios', 'services_path', 'vc_runtimes_script', 'install_service_script']
+        required_keys = ['install_vc_runtimes', 'have_you_locked_down_the_bios', 'services_path', 'vc_runtimes_script', 'install_service_script', 'is_domain_joined', 'base_dn']
         
         for key in required_keys:
             if key not in self.config:
                 p("}}rbERROR: Missing required configuration key: " + key + "}}xx", log_level=1)
                 p("}}rbThe following keys are required:")
                 for key in required_keys:
-                    p("}}yn" + key.replace('_', ' ').title() + "}}xx", log_level=1)
+                    p("}}yn" + key + "}}xx", log_level=1)
                 p("}}rbPlease edit the credential_config.json file and try again.}}xx", log_level=1)
                 return False
         
@@ -117,7 +117,7 @@ class CredentialProcess:
         for key, value in self.config.items():
             p("}}yn" + key.replace('_', ' ').title() + ": }}cn" + str(value) + "}}xx")
         
-        p("}}gb=================================}}xx\n")
+        p("}}gb=================================}}xx")
 
         if self.config.get('debug', 'off').lower() == "on":
             return True
@@ -150,7 +150,7 @@ class CredentialProcess:
             p("}}rbERROR: Failed to check admin privileges: " + str(ex) + "}}xx", log_level=1)
             return False
     
-    def run_command(self, cmd, error_msg=None, critical=False):
+    def run_command(self, cmd, error_msg=None, critical=False, mgmt_log_to_credential=False):
         """
         Run a command and check return code
         
@@ -158,6 +158,8 @@ class CredentialProcess:
             cmd: Command to run
             error_msg: Error message to display on failure
             critical: If True, exit with EXIT_CRITICAL on failure
+            mgmt_log_to_credential: If True, child mgmt process logs to ope-credential.log
+                (via OPE_MGMT_LOG_FILE) instead of ope-mgmt.log.
             
         Returns:
             True on success, False on failure
@@ -171,7 +173,12 @@ class CredentialProcess:
             p("}}gnWorking directory is set to: " + cwd + "}}xx", log_level=4)
 
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=False, cwd=cwd)    
+            env = None
+            if mgmt_log_to_credential:
+                env = os.environ.copy()
+                env["OPE_MGMT_LOG_FILE"] = os.path.abspath(os.path.expandvars(lf))
+
+            result = subprocess.run(cmd, shell=True, capture_output=False, cwd=cwd, env=env)
             if result.returncode != 0:
                 if error_msg:
                     p("}}rb" + error_msg + "}}xx", log_level=1)
@@ -226,8 +233,7 @@ class CredentialProcess:
     
     def unlock_machine(self):
         """Unlock machine to disable security settings for credential process"""
-        p("}}gb-- Unlocking Machine - please wait...}}xx")
-        p("")
+        p("}}gb-- Unlocking Machine...}}xx")
         
         mgmt_exe = self.get_mgmt_exe_path()
         if not mgmt_exe:
@@ -236,7 +242,8 @@ class CredentialProcess:
         return self.run_command(
             f'{mgmt_exe} unlock_machine',
             error_msg="*** ERROR - Failed to unlock machine - Quitting. ***",
-            critical=True
+            critical=True,
+            mgmt_log_to_credential=True,
         )
     
     def install_services(self):
@@ -270,7 +277,8 @@ class CredentialProcess:
         return self.run_command(
             f'{mgmt_exe} credential_laptop',
             error_msg="****** Credential process did not complete properly - this Laptop is NOT ready to hand out to students. *******",
-            critical=True
+            critical=True,
+            mgmt_log_to_credential=True,
         )
     
     def lock_machine(self):
@@ -284,7 +292,8 @@ class CredentialProcess:
         return self.run_command(
             f'{mgmt_exe} lock_machine',
             error_msg="****** ERROR - Unable to lock machine. Credential process did not complete properly - this Laptop is NOT ready to hand out to students. Try mgmt lock_machine again to see if you can lock it manually. *******",
-            critical=True
+            critical=True,
+            mgmt_log_to_credential=True,
         )
     
     def display_completion(self):
@@ -311,36 +320,28 @@ class CredentialProcess:
         """Store the configuration in the registry to be used by the credential_laptop function in mgmt module"""
         p("}}gb-- Storing configuration in the registry...}}xx")
 
-        smc_url = self.config.get('smc_url', '')
-        smc_admin_user = self.config.get('smc_admin_username', '')
         student_user = self.config.get('student_username', '')
         debug = self.config.get('debug', 'off')
+        base_dn = self.config.get('base_dn', '')
+        is_domain_joined = self.config.get('is_domain_joined', False)
 
-        RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_user, value_type="REG_SZ")
+        if is_domain_joined:
+            RegistrySettings.set_reg_value(value_name="is_domain_joined", value=True, value_type="REG_DWORD")
+        else:
+            RegistrySettings.set_reg_value(value_name="is_domain_joined", value=False, value_type="REG_DWORD")
+
         RegistrySettings.set_reg_value(value_name="student_user", value=student_user, value_type="REG_SZ")
         RegistrySettings.set_reg_value(value_name="debug", value=debug, value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="base_dn", value=base_dn, value_type="REG_SZ")
+
+        smc_url = (self.config.get('smc_url') or '').strip()
+        smc_admin_username = (self.config.get('smc_admin_username') or '').strip()
+        if smc_url and smc_admin_username:
+            RegistrySettings.set_reg_value(value_name="smc_url", value=smc_url, value_type="REG_SZ")
+            RegistrySettings.set_reg_value(value_name="smc_admin_user", value=smc_admin_username, value_type="REG_SZ")
 
         p("}}gb-- Configuration stored in the registry...}}xx")
 
-        return True
-
-    def validate_and_store_smc_config(self):
-        """Validate the SMC configuration"""
-        smc_url = self.config.get('smc_url', '')
-        if smc_url == "":
-            p("}}rbERROR: SMC URL is not set.}}xx", log_level=1)
-            return False
-        
-        smc_config = RestClient.get_smc_config(smc_url)
-        if smc_config is None:
-            p("}}rbERROR: Unable to get SMC configuration.}}xx", log_level=1)
-            return False
-        
-        p("}}gnSMC configuration: " + str(smc_config) + "}}xx")
-
-        RegistrySettings.store_smc_config(smc_config)
-        
         return True
 
     def configure_network_devices(self):
@@ -356,12 +357,16 @@ class CredentialProcess:
             return True
 
         approved_nics_str = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default=None)
-
-        approved_nics = json.loads(approved_nics_str)
         
+        try:
+            approved_nics = json.loads(approved_nics_str) if approved_nics_str is not None else None
+        except (json.JSONDecodeError, TypeError):
+            approved_nics = None
+
         if not self.is_valid_approved_nics(approved_nics):
             p("}}gnNo approved NICs found or invalid format, configuring NICs...}}xx")
-            RegistrySettings.remove_reg_value(app="OPEService", value_name="approved_nics")
+            if approved_nics_str is not None:
+                RegistrySettings.remove_reg_value(app="OPEService", value_name="approved_nics")
             NetworkDevices.configure_nics()
         else:
             p("}}gnApproved NICs: " + approved_nics_str + "}}xx")
@@ -376,16 +381,46 @@ class CredentialProcess:
         
         return True
 
-    def validate_and_store_student_account(self):
-        """Validate student account exists in SMC and get account details"""
-        p("}}gb-- Validating and storing student account...}}xx")
+    def validate_and_store_smc_credentials(self):
+        """Validate SMC connectivity and admin credentials when smc_url is configured.
+        Stores the admin password in the credential vault only after successful validation.
+        Returns True if SMC is not configured (skip) or validation passes."""
         smc_url = self.config.get('smc_url', '')
         smc_admin_username = self.config.get('smc_admin_username', '')
-        student_username = self.config.get('student_username', '')
 
-        if not all([smc_url, smc_admin_username]):
-            p("}}rbERROR: SMC URL, or admin username is not set.}}xx", log_level=1)
+        if not smc_url or not smc_admin_username:
+            return True
+
+        p("}}gb-- Validating SMC connectivity and credentials...}}xx")
+
+        if not RestClient.ping_smc(smc_url):
+            p("}}rbERROR: Unable to reach SMC at " + smc_url + " -- check the URL and network.}}xx", log_level=1)
             return False
+
+        smc_admin_password = util.get_smc_password(smc_admin_username)
+        if not smc_admin_password:
+            p("}}ynNo stored SMC admin password found for '" + smc_admin_username + "'.}}xx")
+            smc_admin_password = getpass.getpass("Enter SMC admin password: ")
+            while not RestClient.validate_smc_credentials(smc_url, smc_admin_username, smc_admin_password):
+                p("}}rbERROR: SMC rejected the admin credentials -- check username/password and try again.}}xx", log_level=1)
+                smc_admin_password = getpass.getpass("Enter SMC admin password: ")
+
+            util.store_smc_password(smc_admin_username, smc_admin_password)
+            p("}}gnSMC credentials validated and stored successfully.}}xx")
+            return True
+
+        while not RestClient.validate_smc_credentials(smc_url, smc_admin_username, smc_admin_password):
+            p("}}rbERROR: SMC rejected the admin credentials -- check username/password and try again.}}xx", log_level=1)
+            smc_admin_password = getpass.getpass("Enter SMC admin password: ")
+
+        util.store_smc_password(smc_admin_username, smc_admin_password)
+        p("}}gnSMC credentials validated and stored successfully.}}xx")
+        return True
+
+    def validate_and_store_student_account(self):
+        """Validate student account exists in Active Directory and get account details"""
+        p("}}gb-- Validating and storing student account...}}xx")
+        student_username = RegistrySettings.get_reg_value(value_name="student_user", default="")
 
         if not student_username:
             p("}}cnStudent username not set, please enter it now:}}xx")
@@ -396,32 +431,19 @@ class CredentialProcess:
             self.config['student_username'] = student_username
             # update the registry with the new student username
             RegistrySettings.set_reg_value(value_name="student_user", value=student_username, value_type="REG_SZ")
-
-
-        smc_admin_password = util.get_smc_password(smc_admin_username)
-        if smc_admin_password is None:
-            smc_admin_password = getpass.getpass(prompt=f"Enter SMC admin password:")
-            if not util.store_smc_password(smc_admin_username, smc_admin_password):
-                return False
         
-        result = RestClient.verify_ope_account_in_smc(student_username, smc_url, smc_admin_username, smc_admin_password)
-        if result is None:
-            p("}}rbERROR: Unable to verify student account in SMC.}}xx", log_level=1)
+        is_domain_joined = RegistrySettings.get_reg_value(value_name="is_domain_joined", default=False)
+        if not is_domain_joined:
+            p("}}ynlaptop is not domain joined, skipping student account validation...}}xx")
+            return True
+
+        base_dn = RegistrySettings.get_reg_value(value_name="base_dn", default="")
+        success, msg = util.verify_student_account_in_ad(student_username, base_dn)
+        if not success:
+            p("}}rbERROR: Unable to verify student account in Active Directory: " + msg + "}}xx", log_level=1)
             return False
-
-        # Store the returned information in registry for later use
-        laptop_admin_user, student_full_name, smc_version, \
-        laptop_network_type, laptop_domain_name, laptop_domain_ou = result
-
-        # Store these values in registry
-        RegistrySettings.set_reg_value(value_name="laptop_admin_user", value=laptop_admin_user, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="student_full_name", value=student_full_name, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="smc_version", value=smc_version, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
-
-        p("}}gnStudent account validated and stored successfully}}xx")
+        RegistrySettings.set_reg_value(value_name="student_name", value=msg, value_type="REG_SZ")
+        p("}}gnStudent account validated and stored successfully: " + msg + "}}xx")
         return True
 
     def validate_config_settings(self):
@@ -430,9 +452,10 @@ class CredentialProcess:
 
         install_vc_runtimes = self.config.get('install_vc_runtimes', False)
         have_you_locked_down_the_bios = self.config.get('have_you_locked_down_the_bios', False)
+        is_domain_joined = self.config.get('is_domain_joined', False)
 
-        if not isinstance(install_vc_runtimes, bool) or not isinstance(have_you_locked_down_the_bios, bool):
-            p("}}rbERROR: install_vc_runtimes and have_you_locked_down_the_bios must be a boolean value (true or false).}}xx", log_level=1)
+        if not isinstance(install_vc_runtimes, bool) or not isinstance(have_you_locked_down_the_bios, bool) or not isinstance(is_domain_joined, bool):
+            p("}}rbERROR: install_vc_runtimes, have_you_locked_down_the_bios, and is_domain_joined must be a boolean value (true or false).}}xx", log_level=1)
             return False
 
         if not have_you_locked_down_the_bios:
@@ -440,8 +463,7 @@ class CredentialProcess:
             return False
 
         string_keys = [
-            'smc_url', 'smc_admin_username',
-            'services_path', 'vc_runtimes_script', 'install_service_script'
+            'base_dn', 'services_path', 'vc_runtimes_script', 'install_service_script'
         ]
         for key in string_keys:
             value = self.config.get(key)
@@ -449,10 +471,18 @@ class CredentialProcess:
                 p("}}rbERROR: " + key + " must be a string value (check credential_config.json).}}xx", log_level=1)
                 return False
 
-        # student_username is optional, but if it exists, it must be a string. None is also acceptable.
-        student_username = self.config.get('student_username')
-        if student_username is not None and not isinstance(student_username, str):
-            p("}}rbERROR: student_username must be a string value (check credential_config.json).}}xx", log_level=1)
+        optional_string_keys = ['student_username', 'smc_url', 'smc_admin_username']
+        for key in optional_string_keys:
+            val = self.config.get(key)
+            if val is not None and not isinstance(val, str):
+                p("}}rbERROR: " + key + " must be a string value (check credential_config.json).}}xx", log_level=1)
+                return False
+
+        smc_url = (self.config.get('smc_url') or '').strip()
+        smc_admin_username = (self.config.get('smc_admin_username') or '').strip()
+        if bool(smc_url) != bool(smc_admin_username):
+            p("}}rbERROR: smc_url and smc_admin_username must both be non-empty or both empty — "
+              "set both for SMC/Canvas token integration, or clear both to skip.}}xx", log_level=1)
             return False
 
         approved_nics_str = self.config.get('approved_nics', '')
@@ -489,11 +519,10 @@ class CredentialProcess:
 
         self.store_config_in_registry()
         
-        initial_checks = (self.validate_and_store_smc_config, self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
+        initial_checks = (self.validate_and_store_smc_credentials, self.validate_and_store_student_account, self.configure_network_devices, self.sync_time_with_ntp)
         for check in initial_checks:
             if not check():
                 p("}}rbInitial check failed: " + check.__name__ + "}}xx", log_level=1)
-                RegistrySettings.set_reg_value(value_name="credential_config", value=False, value_type="REG_DWORD")
                 return EXIT_ERROR
         
         # Execute workflow steps

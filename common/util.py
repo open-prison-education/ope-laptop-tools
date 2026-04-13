@@ -2,6 +2,7 @@ import sys
 import os
 from win32com.shell import shellcon, shell
 import win32cred
+import win32com.client
 
 # Should be programdata files folder
 ROOT_FOLDER = os.path.join(
@@ -96,7 +97,7 @@ def get_param(param_index=1, default_value="", only_for=None):
     return ret
 
 def store_smc_password(username, password):
-    """Store the SMC password in the credential vault"""
+    """Store SMC admin password in the credential vault"""
     from common.color import p
     
     credential_data = {
@@ -116,15 +117,59 @@ def store_smc_password(username, password):
         return False
 
 def get_smc_password(username):
-    """Get the SMC password from the credential vault"""
+    """Get SMC admin password from the credential vault"""
     from common.color import p
     
     try:
         credential_data = win32cred.CredRead(f"SMC_{username}", win32cred.CRED_TYPE_GENERIC)
         return credential_data["CredentialBlob"].decode('utf-16le')
     except Exception as ex:
-        p("}}ynNo password found for SMC_" + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
+        p("}}ynNo SMC admin password found for " + username + " in the credential vault " + str(ex) + "}}xx", log_level=1)
         return None
+
+
+def check_adsi(username, base_dn):
+    """Validate username using Windows ADSI (Active Directory Service Interfaces, via pywin32). Only works on Windows, domain-joined."""
+
+    try:
+        # LDAP path to the OU we care about (ADSI ADO uses this in FROM clause)
+        ad_path = f"LDAP://{base_dn}"
+        # Escape special chars in username for LDAP filter
+        safe_user = username.replace("\\", "\\5c").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29")
+
+        conn = win32com.client.Dispatch("ADODB.Connection")
+        conn.Provider = "ADsDSOObject"
+        conn.Open("Active Directory Provider", "", "")
+
+        cmd = win32com.client.Dispatch("ADODB.Command")
+        cmd.ActiveConnection = conn
+        cmd.CommandText = f"SELECT displayName FROM '{ad_path}' WHERE objectCategory='user' AND sAMAccountName='{safe_user}'"
+
+        rs = cmd.Execute()[0]
+        if rs.EOF or rs is None:
+            return False, "User not found in Active Directory"
+        return True, rs.Fields("displayName").Value
+    except Exception as e:
+        return False, "Error checking Active Directory: " + str(e)
+
+def verify_student_account_in_ad(username, base_dn):
+    """Verify student account in Active Directory
+        Run only on a domain-joined Windows machine.
+
+    Args:
+        username: The sAMAccountName (logon name) to look up.
+        base_dn: LDAP base DN (e.g. "OU=ABC Corp Users, DC=abc, DC=org).
+        """
+    if not username or not username.strip():
+        return False, "Username is empty"
+
+    username = username.strip()
+    base_dn = base_dn
+
+    if sys.platform != "win32":
+        return False, "Requires Windows on a domain-joined machine (ADSI)."
+
+    return check_adsi(username, base_dn)
 
 def test_params():
 

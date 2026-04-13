@@ -558,10 +558,9 @@ class UserAccounts:
         if user_name is None or full_name is None or password is None:
             p("}}rbError - Invalid parameters to create new student user!}}xx", debug_level=1)
             return False
-
         # Create local student account
         try:
-            p("}}yn\tAdding student account (" + user_name + ")...}}xx")
+            p("}}ynAdding student account (" + user_name + ")...}}xx")
             accounts.User.create(user_name, password)
         # except pywintypes.error as ex:
         except Exception as ex:
@@ -604,7 +603,7 @@ class UserAccounts:
             p("}}rbERROR setting password for " + user_name + "}}xx\n" + str(ex))
 
         # Add student to the students group
-        p("}}yn\tAdding student to students group...}}xx")
+        p("}}ynAdding student to students group...}}xx")
         if not UserAccounts.set_default_groups_for_student(user_name):
             ret = False
         
@@ -616,7 +615,7 @@ class UserAccounts:
         ret = True
                 
         try:
-            p("}}yn\tAdding Admin account (" + user_name + ")...}}xx")
+            p("}}ynAdding Admin account (" + user_name + ")...}}xx")
             accounts.User.create(user_name, password)
             # p("}}yn\t\tDone.}}xx")
         # except pywintypes.error as ex:
@@ -919,7 +918,7 @@ class UserAccounts:
         ret = True
         # Get a list of accounts that are in the students group
         
-        p("}}cb-- Disabling local student accounts in " + str(UserAccounts.STUDENTS_GROUP) + " group...}}xx")
+        p("}}gnDisabling local student accounts in " + str(UserAccounts.STUDENTS_GROUP) + " group...}}xx")
         try:
             grp = accounts.local_group(UserAccounts.STUDENTS_GROUP)
         except winsys.exc.x_not_found as ex:

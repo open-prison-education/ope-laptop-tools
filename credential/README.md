@@ -13,7 +13,7 @@ At a high level the process performs the following:
 - Confirms the JSON configuration is complete and operator has locked down the BIOS.
 - Verifies the session is elevated (UAC/Admin) before proceeding.
 - Caches configuration data in the registry for downstream services.
-- Pulls SMC configuration, confirms the target student account, and syncs NIC/time settings.
+- Confirms the target student account, and syncs NIC/time settings.
 - Orchestrates `mgmt.exe` commands to unlock the machine, credential the laptop, add Defender exclusions, install services, and relock the device.
 
 Every failure path is logged, and critical steps will stop execution with the correct exit code so the laptop is not handed to students in an unfinished state.
@@ -23,15 +23,15 @@ Every failure path is logged, and critical steps will stop execution with the co
 1.  **Configure `credential_config.json`**:
     -   Open the `credential_config.json` file.
     -   Update the values for each key according to your setup. See the "Configuration" section below for details on each setting.
-    -   Pay special attention to `smc_admin_username` and `student_username`, though you may enter `student_username` at runtime.
+    -   Pay special attention to `is_domain_joined` and `student_username`, though you may enter `student_username` at runtime.
 
 2.  **Run as Administrator**:
     -   The script requires administrative privileges to perform tasks like installing software, modifying system settings, and accessing the registry.
     -   **For `credential.exe`**, you can right-click the file and select "Run as administrator".
     -   **For `credential.py`**, follow step 3 below.
 
-3. **for running `credential.py` (skip this step when running `credential.exe`):**
-    you will need to open your terminal (e.g., PowerShell or Command Prompt) as an administrator before running the script  
+3. **For running `credential.py` (skip this step when running `credential.exe`):**
+    You will need to open your terminal (e.g., PowerShell or Command Prompt) as an administrator before running the script.
    ```powershell
    cd path\to\repo
    python -m venv venv # if not already created
@@ -71,19 +71,19 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ---
 
-### `smc_url`
+### `is_domain_joined`
 
--   **Description**: The URL for the Student Management Console (SMC).
--   **Acceptable Values**: A valid URL string.
--   **Example**: `"https://smc.corrections.sbctc.edu/"`
+-   **Description**: A boolean value to determine if the student username should be checked in Active Directory and full security policies applied. Setting this to `false` is useful for partially testing the credential process. Always set this to `true` for the complete credential process.
+-   **Acceptable Values**: `true`, `false` (boolean)
 -   **Required**: Yes
 
 ---
 
-### `smc_admin_username`
+### `base_dn`
 
--   **Description**: The username for an admin account on the SMC. This is used to verify the student's account.
--   **Acceptable Values**: A valid SMC admin username string.
+-   **Description**: The LDAP base Distinguished Name used to verify the student account in Active Directory. When `is_domain_joined` is `true`, the script queries Active Directory under this DN to confirm the student username exists. The value follows standard LDAP DN syntax with `OU=` (Organizational Unit) and `DC=` (Domain Component) parts. If is_domain_joined is set to false this could be an empty string otherwise values here will be ignored.
+-   **Acceptable Values**: A valid LDAP distinguished name string.
+-   **Example**: `"OU=Student Users,DC=school,DC=example,DC=org"`
 -   **Required**: Yes
 
 ---
@@ -99,14 +99,15 @@ This file contains all the settings for the credentialing process. Below is a de
 ### `approved_nics`
 
 - **Description**: A JSON-encoded string representing a list of approved network adapters and their allowed IP subnets.
-- **Acceptable Values**: A valid JSON string that decodes to a list of lists, each containing a network card name and its associated allowed subnet in CIDR notation. Subent can be partial.
+- **Acceptable Values**: A valid JSON string that decodes to a list of lists, each containing a network card name and its associated allowed subnet in CIDR notation. Subnet can be partial.
 - **Example**: `[[ \"nic_name #1\", \"subnet #1\" ], [ \"nic_name #2\", \"subnet #2\" ]]`
-- **Required**:No (it would use what's in SMC by default, if that is empty you would be prompted. If what you enter in approved_nics matches SMC, approved_nics value in Windows registry will be duplicated)
+- **Required**: No (If that is empty, you will be prompted if registry value for approved nics doesn't exist already.)
 
+---
 
 ### `services_path`
 
--   **Description**: The relative path to the directory from root project containing the OPE services, including `mgmt.exe`.
+-   **Description**: The relative path from the project root to the directory containing the OPE services, including `mgmt.exe`.
 -   **Acceptable Values**: A string representing a valid path.
 -   **Example**: `"Services"`
 -   **Required**: Yes
@@ -115,7 +116,7 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ### `vc_runtimes_script`
 
--   **Description**: The relative path to the directory from root project to the script used for installing for installing the Visual C++ runtimes.
+-   **Description**: The relative path from the project root to the script used for installing the Visual C++ runtimes.
 -   **Acceptable Values**: A string representing a valid path to a `.cmd` or `.bat` file.
 -   **Example**: `"bin/install_vc_runtimes.cmd"`
 -   **Required**: Yes
@@ -124,10 +125,27 @@ This file contains all the settings for the credentialing process. Below is a de
 
 ### `install_service_script`
 
--   **Description**: The relative path to the directory from root project to the script used for installing the OPE services.
+-   **Description**: The relative path from the project root to the script used for installing the OPE services.
 -   **Acceptable Values**: A string representing a valid path to a `.cmd` or `.bat` file.
 -   **Example**: `"bin/install_service.cmd"`
 -   **Required**: Yes
+
+---
+
+### `smc_url`
+
+-   **Description**: Optional. The URL for the Student Management Console (SMC). When set (along with `smc_admin_username`), the credential process will fetch Canvas student access tokens from SMC during credentialing. If both are empty, SMC integration is skipped entirely.
+-   **Acceptable Values**: A valid HTTPS URL string, or `""` to disable.
+-   **Example**: `"https://smc.corrections.sbctc.edu"`
+-   **Required**: No (required if `smc_admin_username` is non-empty; whitespace-only counts as empty)
+
+---
+
+### `smc_admin_username`
+
+-   **Description**: Optional. The SMC admin username used for authenticated API calls. Required if `smc_url` is non-empty. The corresponding password is stored securely in the Windows Credential Vault on first run (you will be prompted if no stored password is found).
+-   **Acceptable Values**: A valid SMC admin username string, or `""` to disable.
+-   **Required**: No (required if `smc_url` is non-empty; whitespace-only counts as empty)
 
 ---
 
@@ -140,13 +158,15 @@ This file contains all the settings for the credentialing process. Below is a de
 -   **Acceptable Values**: `"on"`, `"off"` (string)
 -   **Required**: No
 
+---
 
 ### Runtime Behaviour Influenced by Configuration
 
 - `install_vc_runtimes=false` logs the choice and continues without invoking the batch installer.
 - `debug="on"` sets the working directory to the project root, runs `mgmt` via Python, skips service installation, and bypasses the confirmation prompt.
 - When not in debug mode the script expects `mgmt.exe` to exist under `services_path\mgmt\mgmt.exe`; missing files raise errors and halt the process.
-- Registry values written by the script (`smc_url`, `student_user`, `debug`, etc.) feed the downstream `mgmt` credential flow.
+- Registry values written by the script (`is_domain_joined`, `student_user`, `debug`, etc.) feed the downstream `mgmt` credential flow.
+- When `smc_url` and `smc_admin_username` are configured, the credential process validates SMC connectivity and admin credentials early in the pipeline. During the `mgmt credential_laptop` step, the system will also fetch Canvas student access tokens from SMC and store them in the registry.
 
 ### Error Handling
 

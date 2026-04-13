@@ -48,6 +48,12 @@ if exist "%CURRENT_DIR%credential_config.json" (
     echo Configuration file copied to dist directory.
 )
 
+rem copy readme file to dist directory
+if exist "%CURRENT_DIR%README.md" (
+    copy "%CURRENT_DIR%README.md" "%DIST_OUT%\credential\"
+    echo Readme file copied to dist directory.
+)
+
 echo Ready for deployment!
 echo You can now distribute the contents of: %DIST_OUT%\credential
 echo.

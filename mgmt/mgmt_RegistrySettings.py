@@ -4,7 +4,6 @@ import sys
 import traceback
 import logging
 import time
-import json
 
 # try:
 #     import _winreg as winreg
@@ -35,15 +34,17 @@ class RegistrySettings:
 
     @staticmethod
     def get_credentialed_student_username():
-        # Get credentialed student username
         student_user = RegistrySettings.get_reg_value(app="OPELMS\\student", value_name="user_name", default="")
-        laptop_network_type = RegistrySettings.get_reg_value(app="OPEService", value_name="laptop_network_type", default="Stand Alone")
-        laptop_domain_name = RegistrySettings.get_reg_value(app="OPEService", value_name="laptop_domain_name", default="osn.local")
+        is_domain_joined = bool(RegistrySettings.get_reg_value(value_name="is_domain_joined", default=0))
 
         ret = student_user
-        if student_user != "" and laptop_network_type == "Domain Member" and laptop_domain_name != "":
-            ret = laptop_domain_name + "\\" + student_user
-        
+        if student_user != "" and is_domain_joined:
+            from mgmt_Computer import Computer
+            cs_info = Computer.get_computer_system_info()
+            domain_name = cs_info.get("cs_domain", "")
+            if domain_name:
+                ret = domain_name + "\\" + student_user
+
         return ret
 
     @staticmethod
@@ -348,73 +349,13 @@ class RegistrySettings:
 
     @staticmethod
     def store_smc_config(config_dict):
-        # Example config_dict
-        # {"smc_version": "v1.9.41", "laptop_network_type": "Domain Member", "laptop_domain_name": "osn.local", "laptop_domain_ou": "laptops.osn.local", "laptop_time_servers": ["time.windows.com", "smc.ed", "osn.local"], "laptop_approved_nics": ["Realtek RTL8139C+ Fast Ethernet NIC==192.168.0.", "ZeroTier Virtual Port==192.168.222."]}
-
-        smc_version = config_dict.get("smc_version", "MISSING")
-        RegistrySettings.set_reg_value(app="", value_name="smc_version", value=smc_version, value_type="REG_SZ")
-
-        laptop_network_type = config_dict.get("laptop_network_type", "Stand Alone")
-        RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_network_type", value=laptop_network_type, value_type="REG_SZ")
-
-        laptop_domain_name = config_dict.get("laptop_domain_name", "osn.local")
-        RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_domain_name", value=laptop_domain_name, value_type="REG_SZ")
-
-        laptop_domain_ou = config_dict.get("laptop_domain_ou", "laptops.osn.local")
-        RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_domain_ou", value=laptop_domain_ou, value_type="REG_SZ")
-
-        try:
-            laptop_time_servers = config_dict.get("laptop_time_servers", [])
-            laptop_time_servers_json = json.dumps(laptop_time_servers)
-            RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_time_servers", value=laptop_time_servers_json)
-        except Exception as ex:
-            p("}}rbError storing time servers: " + str(ex) + "}}xx")
-
-        try:
-            laptop_approved_nics = config_dict.get("laptop_approved_nics", [])
-            # Convert nic==ip format to a array of tuples
-            current_nics_json = RegistrySettings.get_reg_value(app="OPEService", value_name="approved_nics", default="[]")
-            current_nics = json.loads(current_nics_json)
-            
-            for nic in laptop_approved_nics:
-                parts = nic.split("==")
-                #p("}}ynParts: " + str(parts) + "}}xx")
-                if len(parts) == 2:
-                    n = (parts[0], parts[1])
-                    if n not in current_nics:
-                        current_nics.append(n)
-                else:
-                    p("}}rnInvalid NIC format: " + str(nic) + "}}xx")
-                
-            
-            current_nics_json = json.dumps(current_nics)
-            #p("}}gnApproved NICs: " + str(current_nics_json) + "}}xx")
-            RegistrySettings.set_reg_value(app="OPEService", value_name="approved_nics", value=current_nics_json)
-        except Exception as ex:
-            p("}}rbError storing approved nics: " + str(ex) + "}}xx")
-            
+        """Deprecated: SMC configuration is no longer used."""
+        p("}}ynstore_smc_config is deprecated; SMC config storage is no longer used.}}xx")
         return True
 
     @staticmethod
-    def store_credential_info(canvas_access_token, canvas_url, smc_url,
-            student_user, student_name, admin_user,
-            laptop_network_type, laptop_domain_name, laptop_domain_ou):
-        # Store credential info in the proper places
-        RegistrySettings.set_reg_value(app="", value_name="canvas_access_token",
-            value=canvas_access_token, value_type="REG_SZ")
-        RegistrySettings.set_reg_value(app="OPELMS\\student", value_name="canvas_access_token",
-            value=canvas_access_token, value_type="REG_SZ")
-
-        RegistrySettings.set_reg_value(app="", value_name="canvas_url", value=canvas_url,
-            value_type="REG_SZ")
-        RegistrySettings.set_reg_value(app="OPELMS\\student", value_name="canvas_url",
-            value=canvas_url, value_type="REG_SZ")
-
-        RegistrySettings.set_reg_value(app="", value_name="smc_url", value=smc_url,
-            value_type="REG_SZ")
-        RegistrySettings.set_reg_value(app="OPELMS\\student", value_name="smc_url",
-            value=smc_url, value_type="REG_SZ")
-
+    def store_credential_info(student_user, student_name, is_domain_joined,
+                              canvas_access_token="", canvas_url=""):
         RegistrySettings.set_reg_value(app="", value_name="student_user", value=student_user,
             value_type="REG_SZ")
         RegistrySettings.set_reg_value(app="OPELMS\\student", value_name="user_name",
@@ -423,17 +364,17 @@ class RegistrySettings:
         RegistrySettings.set_reg_value(app="", value_name="student_name", value=student_name,
             value_type="REG_SZ")
 
-        RegistrySettings.set_reg_value(app="OPEService", value_name="admin_user", value=admin_user,
-            value_type="REG_SZ")
-        
-        RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_network_type", value=laptop_network_type,
-            value_type="REG_SZ")
-        
-        RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_domain_name", value=laptop_domain_name,
-            value_type="REG_SZ")
-        
-        RegistrySettings.set_reg_value(app="OPEService", value_name="laptop_domain_ou", value=laptop_domain_ou,
-            value_type="REG_SZ")
+        RegistrySettings.set_reg_value(value_name="is_domain_joined",
+            value=1 if is_domain_joined else 0, value_type="REG_DWORD")
+
+        if canvas_access_token:
+            for app_path in ("", "OPELMS\\student"):
+                RegistrySettings.set_reg_value(app=app_path, value_name="canvas_access_token",
+                    value=canvas_access_token, value_type="REG_SZ")
+        if canvas_url:
+            for app_path in ("", "OPELMS\\student"):
+                RegistrySettings.set_reg_value(app=app_path, value_name="canvas_url",
+                    value=canvas_url, value_type="REG_SZ")
 
         return True
 

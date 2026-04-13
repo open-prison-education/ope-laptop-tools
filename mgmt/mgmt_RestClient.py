@@ -166,7 +166,7 @@ class RestClient:
             if "unable to connect to canvas db" in msg:
                 p("\n}}rbSMC Unable to connect to Canvas DB - make sure canvas app is running and\n" +
                 "the SMC tool is configured to talk to Canvas}}xx")
-                p("}}yn" + str(msg) + "}}xx")
+                p("}}rb" + str(msg) + "}}xx")
                 return None
             if "Unable to find user in canvas:" in  msg:
                 p("\n}}rbInvalid User!}}xx")
@@ -261,7 +261,7 @@ class RestClient:
     def ping_smc(smc_url):
 
         json_response = RestClient.send_rest_call(server=smc_url,
-            api_endpoint="lms/ping.json", timeout=3, log_level=5
+            api_endpoint="lms/ping.json", timeout=5, log_level=5
             )
 
         if json_response is None:
@@ -274,6 +274,21 @@ class RestClient:
         p("}}mnPING - Got SMC Server time: " + str(server_time) + "}}xx")
 
         return True
+
+    @staticmethod
+    def validate_smc_credentials(smc_url, admin_user, admin_pw):
+        """Make an authenticated call to SMC to verify admin credentials are accepted.
+        Uses the verify_ope_account endpoint with a dummy user -- any JSON response
+        (even 'Invalid User!') means credentials are valid. A None return from
+        send_rest_call (403 Forbidden / connection error) means they are rejected."""
+        json_response = RestClient.send_rest_call(
+            server=smc_url,
+            api_endpoint="lms/verify_ope_account_in_smc.json/_test",
+            auth_user=admin_user,
+            auth_password=admin_pw,
+            timeout=10,
+        )
+        return json_response is not None
 
 if __name__ == "__main__":
     # Run Tests
