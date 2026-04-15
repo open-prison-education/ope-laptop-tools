@@ -71,8 +71,10 @@ class GroupPolicy:
     def apply_group_policy():
         ret = True
 
-        laptop_network_type = RegistrySettings.get_reg_value(app="OPEService",
-            value_name="laptop_network_type", default="Standalone", value_type="REG_SZ")
+        is_domain_joined = bool(RegistrySettings.get_reg_value(
+            value_name="is_domain_joined", default=0))
+
+        p("}}mnis_domain_joined: " + str(is_domain_joined) + "}}xx")
 
         if RegistrySettings.is_debug():
             p("}}ynDEBUG MODE ON - Skipping apply group policy}}xx")
@@ -102,8 +104,9 @@ class GroupPolicy:
         only_for = "apply_group_policy"
 
         default_gpo = "gpo"
-        if laptop_network_type != "Standalone":
+        if is_domain_joined:
             default_gpo = "ad_gpo"
+        p("}}mndefault_gpo: " + default_gpo + "}}xx")
         gpo_name = util.get_param(2, default_gpo, only_for=only_for)
         gpo_name_pre = gpo_name + "_pre"
         gpo_name_post = gpo_name + "_post"
