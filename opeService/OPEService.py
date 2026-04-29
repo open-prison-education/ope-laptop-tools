@@ -25,10 +25,16 @@ import sys
 import os
 import random
 
+# Frozen: PyInstaller bootloader already puts sys._MEIPASS on path; build_svc --add-data supplies tree there.
+if not getattr(sys, "frozen", False):
+    ope_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if ope_project_root not in sys.path:
+        sys.path.insert(0, ope_project_root)
+
 from collections import OrderedDict
 
 from common import util
-from mgmt import mgmt_UserAccounts
+from mgmt.mgmt_UserAccounts import UserAccounts
 # Pull in logger first and set it up!
 from mgmt.mgmt_EventLog import EventLog
 
@@ -396,7 +402,7 @@ class OPEService(win32serviceutil.ServiceFramework):
 
                     if event.EventID == event_id and (event_info["LogonType"] in ["2", "7", "10", "11"]):
                         p(f"*** Interactive Login event detected.\n{event_info}", log_level=3)
-                        mgmt_UserAccounts.ProcessLogonEvent(event_info)
+                        UserAccounts.ProcessLogonEvent(event_info)
                         
                         
             except Exception as e:
