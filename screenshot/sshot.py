@@ -2,23 +2,23 @@
 import os
 import sys
 import time
-#import pyscreenshot as ImageGrab
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
-#import ntsecuritycon
-#import win32security
 import win32api
 import win32gui
 import win32ui
 import win32con
-#import getpass
 import datetime
 import ctypes
 import traceback
-#from io import StringIO, BytesIO
 
-# Look at using mss??
+# Frozen PyInstaller: bootloader sets sys._MEIPASS on path (see build_svc --add-data).
+# Nuitka standalone: imports are compiled into sshot.dist; Nuitka injects __compiled__ (it does not set sys.frozen).
+if not globals().get("__compiled__") and not getattr(sys, "frozen", False):
+    ope_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if ope_project_root not in sys.path:
+        sys.path.insert(0, ope_project_root)
 
 from common import util
 from mgmt.mgmt_EventLog import EventLog
