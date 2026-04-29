@@ -1420,9 +1420,9 @@ class UserAccounts:
             # admin_group is (group_name, group_sid)
             domain_admin_groups.append((admin_group[0], admin_group[1]))
 
-        #print("b")        
-        #p("}}cb-- Logging out all student accounts if machine is not locked...}}xx")
-        #users.append(("osn", "Administrator"))
+    
+        p("}}cb-- Logging out all student accounts if machine is not locked...}}xx")
+
         for user in users:
             try:
                 user_name = user[0] + "\\" + user[1]
@@ -1444,23 +1444,21 @@ class UserAccounts:
                 win32api.CloseHandle(process_token)
                     
                 if is_admin:
-                    p("}}cn-" + user_name + " - allowed admin - not logging out.}}xx", log_level=4)
+                    p("}}cn-" + user_name + " - allowed admin - not logging out.}}xx")
                     continue
                 
                 # If we get here, it isn't an admin user, lets see if it is a valid student (in the OPEStudents group)
                 if UserAccounts.is_user_in_group(user_name, "OPEStudents") and is_locked == True:
-                    p("}}cn-" + user_name + " - allowed student and machine locked - leaving logged in.}}xx", log_level=4)
+                    p("}}cn-" + user_name + " - allowed student and machine locked - leaving logged in.}}xx")
                     continue
                 # In this case, they are a valid student, but the machine isn't locked
                 elif UserAccounts.is_user_in_group(user_name, "OPEStudents") and is_locked == False:
-                    p("}}yn-" + user_name + " - allowed student and machine not locked - logging out.}}xx", log_level=2)
+                    p("}}yn-" + user_name + " - allowed student and machine not locked - logging out.}}xx")
                     UserAccounts.log_out_user(user_name)
                     continue
                 
                 # None of the others apply, so must need to log them out
-                p("}}yn-" + user_name + " - not admin or OPEStudent - logging out.}}xx", log_level=2)
-                # TODO - Turn logout back on when debugging is done
-                #p("}}rb***** Logging out disabled for debugging! *****}}xx")
+                p("}}yn-" + user_name + " - not admin or OPEStudent - logging out.}}xx")
                 UserAccounts.log_out_user(user_name)
             except Exception as ex:
                 p("}}rbError checking if we should logout the user: " + user_name + "}}xx\n" + str(ex))
