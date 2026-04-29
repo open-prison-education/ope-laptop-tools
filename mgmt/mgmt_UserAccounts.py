@@ -1346,7 +1346,7 @@ class UserAccounts:
     @staticmethod
     def get_admin_groups():
         # Get the list of groups that are considered admin groups        
-        domain_groups = ["OPEAdmins", "Domain Admins", "Schema Admins", "Enterprise Admins", "Administrators", "G-S-OSN-Edu-IT-Server-Managers"]
+        domain_groups = ["OPEAdmins", "Domain Admins", "Schema Admins", "Enterprise Admins", "Administrators"]
         # Get SIDs for these groups.
         group_list = list()
         #print("a")
