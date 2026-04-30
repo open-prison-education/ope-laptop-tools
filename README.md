@@ -182,23 +182,23 @@ pip install -r modules.txt
 
 **Build mgmt:**
 ```powershell
-.\nuitka_mgmt_build.cmd
+.\mgmt\nuitka_mgmt_build.cmd
 ```
 
 **Build screenshot:**
 ```powershell
-.\nuitka_sshot_build.cmd
+.\screenshot\nuitka_sshot_build.cmd
 ```
 
 **Build OPEService:**
 ```powershell
-python .\build_svc.py
+python .\opeService\build_svc.py
 ```
 
 **Build credential:**
 ```powershell
 cd credential
-.\build_credential.cmd
+.\credential\build_credential.cmd
 ```
 
 **Output:** All built applications are located in the `dist` directory.
