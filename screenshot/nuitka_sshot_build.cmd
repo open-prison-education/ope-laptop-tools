@@ -1,5 +1,6 @@
-
 @echo off
+cd /d "%~dp0.."
+
 set VERSION=1.0.109
 @REM rem read version file from mgmt.version
 @REM for /f "delims=" %%a in (mgmt.version) do (
