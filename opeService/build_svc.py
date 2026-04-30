@@ -3,13 +3,14 @@ import os
 
 project_name = "OPEService"
 current_dir = os.path.dirname(os.path.abspath(__file__))
-main_file = os.path.join(current_dir, "opeService", f"{project_name}.py")
+root_dir = os.path.dirname(current_dir)
+main_file = os.path.join(current_dir, f"{project_name}.py")
 
 # If you get corrupted errors, use this
 clean = " --clean "
 remove_spec_file = True
 
-spec_file = os.path.join(current_dir, "opeService", f"{project_name}.spec")
+spec_file = os.path.join(current_dir, f"{project_name}.spec")
 
 # delete the spec file if it exists, to avoid corrupted errors
 # a new spec file will be created in the opeService directory using build params
@@ -71,15 +72,14 @@ py_imports = [
 hidden_imports_str = " ".join([f"--hidden-import {package}" for package in py_imports])
 
 # Add --specpath flag to put the spec file in the opeService directory
-spec_path = os.path.join(current_dir, "opeService")
 build_params = (
     "python -m PyInstaller " + clean +
     hidden_imports_str + " --noupx " + 
-    f" --add-data {os.path.join(current_dir, 'common')};common " + CUSTOM_EVENT_LOG_DLL +
-    f" --add-data {os.path.join(current_dir, 'mgmt')};mgmt" +
-    f" --noconfirm --icon {os.path.join(current_dir, 'common', 'logo_icon.ico')}" +
-    f" --specpath {spec_path}" +
-    f" --distpath {os.path.join(current_dir, "dist")}"
+    f" --add-data {os.path.join(root_dir, 'common')};common " + CUSTOM_EVENT_LOG_DLL +
+    f" --add-data {os.path.join(root_dir, 'mgmt')};mgmt" +
+    f" --noconfirm --icon {os.path.join(root_dir, 'common', 'logo_icon.ico')}" +
+    f" --specpath {current_dir}" +
+    f" --distpath {os.path.join(root_dir, "dist")}"
 )
 # == Build the app for windows using pyinstaller ==
 print(build_params)
