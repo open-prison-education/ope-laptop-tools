@@ -157,11 +157,11 @@ class RestClient:
                 return None
             if msg == "Invalid User!":
                 p("\n}}rbInvalid User!}}xx")
-                p("}}mnUser doesn't exit in system, please import this student in the SMC first!}}xx")
+                p("}}mnUser + " + student_user + " doesn't exist in system, please import this student in the SMC first!}}xx")
                 return None
             if msg == "No username specified!":
                 p("\n}}rbInvalid User!}}xx")
-                p("}}mnNo user with this name exists, please import this student in the SMC first!}}xx")
+                p("}}mnNo user with this name " + student_user + " exists, please import this student in the SMC first!}}xx")
                 return None
             if "unable to connect to canvas db" in msg:
                 p("\n}}rbSMC Unable to connect to Canvas DB - make sure canvas app is running and\n" +
@@ -170,7 +170,7 @@ class RestClient:
                 return None
             if "Unable to find user in canvas:" in  msg:
                 p("\n}}rbInvalid User!}}xx")
-                p("}}mnUser exists in SMC but not in Canvas, please rerun import this student in the SMC to correct the issue!}}xx")
+                p("}}mnUser " + student_user + " exists in SMC but not in Canvas, please rerun import this student in the SMC to correct the issue!}}xx")
                 return None
             #full_name = util.get_dict_value(json_response, "full_name")
             canvas_access_token = util.get_dict_value(json_response, "key")
