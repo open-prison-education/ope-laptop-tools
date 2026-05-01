@@ -39,7 +39,7 @@ class ScreenShot:
             return
         
         # Find the logged in user and run the sshot.exe app
-        cmd = os.path.join(util.BINARIES_FOLDER, "sshot\\sshot.exe")
+        cmd = os.path.join(util.BINARIES_FOLDER, "sshot", "sshot.exe")
         
         p("}}gnTrying to run " + cmd + "}}xx", log_level=4)
 
