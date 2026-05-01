@@ -35,17 +35,17 @@ class ScreenShot:
         ScreenShot.init_globals()
 
         if ScreenShot.DISABLE_SSHOT:
-            p("}}ybSkipping screen shot - disabled by .disable_sshot file}}xx", log_level=2)
+            p("}}ybSkipping screenshot - disabled by .disable_sshot file}}xx", log_level=2)
             return
         
         # Find the logged in user and run the sshot.exe app
         cmd = os.path.join(util.BINARIES_FOLDER, "sshot", "sshot.exe")
         
-        p("}}gnTrying to run " + cmd + "}}xx", log_level=4)
+        p("}}gnTrying to run " + cmd + "}}xx")
 
         user_token = UserAccounts.get_active_user_token()
         if user_token is None:
-            p("}}ynUnable to get user token - screen locked?}}xx", log_level=2)
+            p("}}ybSkipping screenshot - user not logged in?}}xx")
             return ret
 
         sidObj, intVal = win32security.GetTokenInformation(user_token, win32security.TokenUser)
@@ -54,9 +54,8 @@ class ScreenShot:
             accountName, domainName, accountTypeInt = \
                 win32security.LookupAccountSid(".", sidObj)
         else:
-            p("}}rnUnable to get User Token! }}xx", log_level=1)
+            p("}}rnSkipping screenshot - unable to get user token}}xx")
             return None
-        #p("}}gnFound User Token: " + str(user_token) + "}}xx", log_level=5)
         user_name = domainName + "\\" + accountName
 
         # If user is in the administrators group, skip taking the sshot
@@ -64,12 +63,9 @@ class ScreenShot:
         # See if the process token has membership in one of the following groups
         if UserAccounts.is_process_in_group(user_token, admin_group_list, find_first=True):
             p("}}mbUser (" + user_name + ") is in admin group, skipping screen shot...}}xx")
-            #p("}}rbDEBUG - ALWAYS TAKING SCREEN SHOT!}}xx", log_level=2)
             return True
 
         p("}}gnRunning As: " + user_name + "}}xx", log_level=2)
-        # Put this token in the logged in session
-        #win32security.SetTokenInformation(user_token_copy, win32security.TokenSessionId, session_id)
 
         # Use win create process function
         si = win32process.STARTUPINFO()
@@ -102,32 +98,9 @@ class ScreenShot:
         # Cleanup
         user_token.close()
 
-        # else:
-        #     # Not logged in as system user, run as current user
-        #     try:
-        #         timeout = 10 # 10 seconds?
-        #         # Log an error if the process doesn't return 0
-        #         # stdout=PIPE and stderr=STDOUT instead of capture_output=True
-        #         p("}}gnRunning as current user " + user_name + "}}xx")
-        #         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,timeout=timeout, check=False)
-        #         if (proc.returncode == 0):
-        #             p("Command Results: " +  cmd + "\n" + proc.stdout.decode())
-        #             ret = True
-        #         else:
-        #             p("*** Command Failed!: " + cmd + "(" + str(proc.returncode) + ") \n" + proc.stdout.decode())
-        #     except Exception as ex:
-        #         p("*** Command Exception! " + cmd + " \n" + \
-        #             str(ex))
             
         if ret is True:
-            p("}}gnSnapped.}}xx", log_level=3)
+            p("}}gnScreenshot taken.}}xx", log_level=3)
         
         return ret
-        
 
-# Switch to the user
-# NOTE - Impersionation not working? Run process ass
-# win32security.ImpersonateLoggedOnUser(user_token)
-# logging.info("Impersonating " + win32api.GetUserName())
-# Return us to normal security
-# win32security.RevertToSelf()
