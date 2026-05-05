@@ -180,6 +180,11 @@ pip install -r modules.txt
 
 ### Building Applications
 
+**Build All:**
+```powershell
+.\build_all.cmd
+```
+
 **Build mgmt:**
 ```powershell
 .\mgmt\nuitka_mgmt_build.cmd
