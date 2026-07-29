@@ -1,5 +1,10 @@
 # Release Log
 
+## 26.7.29
+### mgmt modules:
+- Added `delete_students_group` method to `UserAccounts` that deletes and recreates the students group to clear stale memberships
+- Integrated students group deletion into `CredentialProcess` before reassigning default groups for the student account
+
 ## 26.4.1
 ### credential script:
 - Replaced SMC server dependency with local Active Directory (ADSI) verification for student accounts
