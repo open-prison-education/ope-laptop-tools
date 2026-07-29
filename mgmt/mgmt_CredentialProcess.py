@@ -460,6 +460,10 @@ class CredentialProcess:
             p("}}rbError - Could not reset ope folder permissions!\nStudent Account NOT unlocked!}}xx")
             return False
         
+        if not UserAccounts.delete_students_group():
+            p("}}rbError - Could not delete students group!}}xx")
+            return False
+
         if not UserAccounts.set_default_groups_for_student(student_user_name):
             p("}}rbError - Could not reset default groups for student!\nStudent Account NOT unlocked!}}xx")
             return False

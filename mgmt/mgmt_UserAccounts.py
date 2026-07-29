@@ -678,6 +678,20 @@ class UserAccounts:
         return True
 
     @staticmethod
+    def delete_students_group():
+        p("}}gnDeleting " + str(UserAccounts.STUDENTS_GROUP) + " group to clear old memberships...}}xx")
+        try:
+            grp = accounts.local_group(UserAccounts.STUDENTS_GROUP)
+            grp.delete()
+            p("}}gn" + str(UserAccounts.STUDENTS_GROUP) + " group deleted.}}xx")
+        except winsys.exc.x_not_found:
+            p("}}yn" + str(UserAccounts.STUDENTS_GROUP) + " group not found - nothing to delete.}}xx")
+        except Exception as ex:
+            p("}}rbError deleting " + str(UserAccounts.STUDENTS_GROUP) + " group: " + str(ex) + "}}xx")
+            return False
+        return True
+
+    @staticmethod
     def create_local_students_group():
         # Make sure the group in question exists
         ret = False
