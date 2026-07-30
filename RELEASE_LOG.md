@@ -1,6 +1,9 @@
 # Release Log
 
-## 26.7.29
+## 26.7.30
+### credential script and mgmt module (via common module update):
+- Enhanced `check_adsi` to validate that the AD user's display name is not empty or whitespace before returning success
+
 ### mgmt modules:
 - Added `delete_students_group` method to `UserAccounts` that deletes and recreates the students group to clear stale memberships
 - Integrated students group deletion into `CredentialProcess` before reassigning default groups for the student account
