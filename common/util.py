@@ -148,7 +148,10 @@ def check_adsi(username, base_dn):
         rs = cmd.Execute()[0]
         if rs.EOF or rs is None:
             return False, "User not found in Active Directory"
-        return True, rs.Fields("displayName").Value
+        display_name = rs.Fields("displayName").Value
+        if not display_name or display_name.strip() == "":
+            return False, "User display name is empty in Active Directory"
+        return True, display_name
     except Exception as e:
         return False, "Error checking Active Directory: " + str(e)
 
